@@ -1,16 +1,21 @@
 # habsim
 High Altitude Balloon Simulator
 
-Currently this is the start of a high altitude balloon simulator.
+This is the beginning of a high altitude balloon simulator.
 
-Currently:
-* Doesn't calculate changing pressure vs altitude (pretty obviously incredibly wrong)
-* Assumes constant balloon envelope
-* Several other silly things that would happen when you are just starting in on a project.
+Current functionality:
 
-To do:
+* Calculates vertical ascent and decent of a balloon.
 
-* Calculate changing pressure of atmosphere with altitude
-* Calculate changing drag due to changing balloon envelope
-* Calculate burst altitude from balloon envelope
+Considers:
 
+* ISA Atmospheric Model on ascent and decent.
+* Calculates changing drag from balloon envlope and atmospheric density on ascent
+* Calculates drag from parachute (given a Cd)
+
+To Do: (roughly in order of importance)
+
+* Make the code cleaner breaking things out into functions.
+* Temperature effects of atmosphere on balloon during ascent.
+* Config file, or command line input, of parameters
+* Longitude and latitude calculations from wind data.

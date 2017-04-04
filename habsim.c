@@ -96,8 +96,12 @@ int main(void)
   double b_mass = 1.0;
   double b_alti = 0.0;
   double b_cd = 0.47;
-  double f_lift_kg = 1.5;
+  double f_lift_kg = 2.62;
   double b_diam = 2.0;
+  double p_cd = 1.0;
+  double p_cross_area = 0.22;
+  double b_burst_dia = 5.0;
+  double land_ele = 300.0;
   
   /* calculated state variables for the balloon */
   double b_velo = 0.0;
@@ -112,9 +116,13 @@ int main(void)
   prdn prdn1;  
   /* time increment in seconds*/
   double t_inc = 0.01;
-  double t = 0;
+  double t = 0.0;
+  
+  /* Simulation results */
+  double max_alti = 0.0;
   
   /* calculate some inital things*/
+  b_alti = land_ele;
   double f_g = b_mass * g;
   f_lift = f_lift_kg * g;
   /* volume of sphere V = 4/3 * pi *r^3 */ 
@@ -130,8 +138,8 @@ int main(void)
   printf("Diameter: %.3f m\n", b_diam);
   printf("\n");
   
-  printf("seconds, fnet, fdrag, altitude, velocity, acceleration, pressure, radius, volume\n");
-  while(b_radius < 5.0) {
+  // printf("seconds, fnet, fdrag, altitude, velocity, acceleration, pressure, radius, volume\n");
+  while(b_radius < b_burst_dia) {
   
     /* calculate pressure at altitude */
     prdn prdn_new = calc_pressure(b_alti);
@@ -146,7 +154,7 @@ int main(void)
     /* cross sectional area of sphere: A = pi*r^2 */
     b_cross_area = M_PI * pow(b_radius, 2);
     
-    /* drag force */
+    /* drag force - ascending balloon*/
     /* https://en.wikipedia.org/wiki/Drag_equation */
     f_drag = (0.5)*prdn_new.dn*pow(b_velo,2)*b_cd*b_cross_area;
     
@@ -159,16 +167,57 @@ int main(void)
     b_velo = b_velo + b_acel*t_inc;
     b_alti = b_alti + b_velo*t_inc + (0.5 * b_acel * pow(t_inc,2));
     
-    printf("%f, %f, %f, %f, %f, %f, %f, %f, %f\n", t , f_net, f_drag, b_alti, b_velo, b_acel, b_pres, b_radius, b_volu);
+    // printf("%f, %f, %f, %f, %f, %f, %f, %f, %f\n", t , f_net, f_drag, b_alti, b_velo, b_acel, b_pres, b_radius, b_volu);
+    
+    if (b_alti > max_alti) max_alti = b_alti;
 
     t += t_inc;    
-   }    
+   }   
   
-  double hours = t/3600.0;
+  double t_ascent = t;
+  double ahours = t_ascent/3600.0;
+  double amin = (ahours - floor(ahours))*60;
+  double asec = (amin - floor(amin))*60;
+  
+  /* calculate decent phase of flight */
+  
+  while(b_alti > land_ele) {
+    /* calculate pressure at altitude */
+    prdn prdn_new = calc_pressure(b_alti);
+    
+    /* drag force - parachute*/
+    /* https://en.wikipedia.org/wiki/Drag_equation */
+    f_drag = (0.5)*prdn_new.dn*pow(b_velo,2)*p_cd*p_cross_area;
+    
+    /* net forces */
+    f_net = f_drag - f_g;
+    
+    /* Kenimatic Equations */
+    /* https://en.wikipedia.org/wiki/Equations_of_motion */
+    b_acel = f_net/b_mass;
+    b_velo = b_velo + b_acel*t_inc;
+    b_alti = b_alti + b_velo*t_inc + (0.5 * b_acel * pow(t_inc,2));
+    
+    // printf("%f, %f, %f, %f, %f, %f, %f\n", t , f_net, f_drag, b_alti, b_velo, b_acel, b_pres);
+
+    t += t_inc;   
+    
+  }
+  
+  double t_decent = t - t_ascent;
+  double dhours = t_decent/3600.0;
+  double dmin = (dhours - floor(dhours))*60;
+  double dsec = (dmin - floor(dmin))*60;
+  
+  double t_total = t;
+  double hours = t_total/3600.0;
   double min = (hours - floor(hours))*60;
   double sec = (min - floor(min))*60;
   
-  printf("Flight time %.0f hours, %.0f min, %f sec.\n", floor(hours), floor(min), sec);
+  printf("Maximum Altitude: %.1f meters.\n", max_alti);
+  printf("Ascent duration %.0f hours, %.0f min, %.2f sec.\n", floor(ahours), floor(amin), asec);
+  printf("Decent duration %.0f hours, %.0f min, %.2f sec.\n", floor(dhours), floor(dmin), dsec);
+  printf("Flight duration %.0f hours, %.0f min, %.2f sec.\n", floor(hours), floor(min), sec);
     
   printf("\n");
   return 0;
