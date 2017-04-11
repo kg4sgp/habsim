@@ -179,7 +179,7 @@ int main(void)
   double amin = (ahours - floor(ahours))*60;
   double asec = (amin - floor(amin))*60;
   
-  /* calculate decent phase of flight */
+  /* calculate descent phase of flight */
   
   while(b_alti > land_ele) {
     /* calculate pressure at altitude */
@@ -204,8 +204,8 @@ int main(void)
     
   }
   
-  double t_decent = t - t_ascent;
-  double dhours = t_decent/3600.0;
+  double t_descent = t - t_ascent;
+  double dhours = t_descent/3600.0;
   double dmin = (dhours - floor(dhours))*60;
   double dsec = (dmin - floor(dmin))*60;
   
@@ -216,7 +216,7 @@ int main(void)
   
   printf("Maximum Altitude: %.1f meters.\n", max_alti);
   printf("Ascent duration %.0f hours, %.0f min, %.2f sec.\n", floor(ahours), floor(amin), asec);
-  printf("Decent duration %.0f hours, %.0f min, %.2f sec.\n", floor(dhours), floor(dmin), dsec);
+  printf("Descent duration %.0f hours, %.0f min, %.2f sec.\n", floor(dhours), floor(dmin), dsec);
   printf("Flight duration %.0f hours, %.0f min, %.2f sec.\n", floor(hours), floor(min), sec);
     
   printf("\n");

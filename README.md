@@ -5,11 +5,11 @@ This is the beginning of a high altitude balloon simulator.
 
 Current functionality:
 
-* Calculates vertical ascent and decent of a balloon.
+* Calculates vertical ascent and descent of a balloon.
 
 Considers:
 
-* ISA Atmospheric Model on ascent and decent.
+* ISA Atmospheric Model on ascent and descent.
 * Calculates changing drag from balloon envlope and atmospheric density on ascent
 * Calculates drag from parachute (given a Cd)
 
