@@ -85,15 +85,63 @@ prdn calc_pressure(double alt)
   return prdn2;
 }
 
+
+/* https://en.wikipedia.org/wiki/Barometric_formula */
+double calc_temp(double alt)
+{
+  // Standard atmospheric pressure
+  // Below 51 km: Practical Meteorology by Roland Stull, pg 12
+  // Above 51 km: http://www.braeunig.us/space/atmmodel.htm
+  double geopot_height = alt/1000.0;
+
+  if (geopot_height <= 11.0)          // Troposphere
+    return 288.15f - (6.5 * geopot_height);
+  else if (geopot_height <= 20.0)     // Stratosphere starts
+    return 216.65f;
+  else if (geopot_height <= 32.0)
+    return 196.65f + geopot_height;
+  else if (geopot_height <= 47.0)
+    return 228.65f + 2.8 * (geopot_height - 32.0);
+  else if (geopot_height <= 51.0)     // Mesosphere starts
+    return 270.65f;
+  else if (geopot_height <= 71.0)
+    return 270.65f - 2.8 * (geopot_height - 51.0);
+  else if (geopot_height <= 84.85)
+    return 214.65f - 2.0 * (geopot_height - 71.0);
+  // Thermosphere has high kinetic temperature (500 C to 2000 C) but temperature
+  // as measured by a thermometer would be very low because of almost vacuum.
+
+
+}
+
+double gas_dens(double molmass, double pressure, double temperature)
+{
+  /* universal gas constant */
+  double r = 8.3144598; 
+  
+  double gd = ((molmass*pressure)/(r*temperature));
+  return gd;
+}
+
+double boyancy(double p_air, double p_gas, double gaccel, double volume)
+{
+  double fb = ((p_air-p_gas)*gaccel*volume);
+  return fb;
+}
+
 int main(void)
 {
 
+  /* printing */
+  int print_deci = 1000;
+  int print_count = -1;
+
   /* constants */
-  double air_den = 1.225;
   double g = 9.80665;
+  double mm_h2 = 2.01588E-3;
 
   /* initial state variables for the balloon */
-  double b_mass = 1.0;
+  double b_mass = 4.0;
   double b_alti = 0.0;
   double b_cd = 0.47;
   double f_lift_kg = 2.62;
@@ -102,6 +150,7 @@ int main(void)
   double p_cross_area = 0.22;
   double b_burst_dia = 5.0;
   double land_ele = 300.0;
+  double f_boyant = 0.0;
   
   /* calculated state variables for the balloon */
   double b_velo = 0.0;
@@ -113,10 +162,14 @@ int main(void)
   double f_net = 0.0;
   double f_lift = 0.0;
   double f_drag  = 0.0;
+  double a_temp = 0.0;
   prdn prdn1;  
   /* time increment in seconds*/
   double t_inc = 0.01;
   double t = 0.0;
+  double adabatic_const = 0.0;
+  double adabatic_temp = 0.0;
+  double h2_den = 0.0;
   
   /* Simulation results */
   double max_alti = 0.0;
@@ -129,7 +182,9 @@ int main(void)
   b_volu = (4.0/3.0) * M_PI * pow((b_diam/2), 3);
   prdn1 = calc_pressure(b_alti);
   b_pres = prdn1.pr;
-  air_den = prdn1.dn;
+  a_temp = calc_temp(b_alti);
+  adabatic_const = (b_pres*b_volu)/a_temp;
+  
   
   /* print flight parameters */
   printf("\n");
@@ -148,18 +203,29 @@ int main(void)
     b_volu = (b_pres*b_volu)/prdn_new.pr;
     b_pres = prdn_new.pr;
     
-    /* use altitude to calculate cross sectional area of balloon */
+    /* calculate radius from volume */
     b_radius = cbrt((3.0*b_volu)/(4.0*M_PI));
   
     /* cross sectional area of sphere: A = pi*r^2 */
     b_cross_area = M_PI * pow(b_radius, 2);
+    
+    a_temp = calc_temp(b_alti);
+    adabatic_temp = (b_pres*b_volu)/adabatic_const;
+    
+    /* calculate h2 density */
+    h2_den = gas_dens(mm_h2, b_pres, a_temp);
+    
+    /* calculate boyant force */
+    f_boyant = boyancy(prdn_new.dn, h2_den, g, b_volu);
     
     /* drag force - ascending balloon*/
     /* https://en.wikipedia.org/wiki/Drag_equation */
     f_drag = (0.5)*prdn_new.dn*pow(b_velo,2)*b_cd*b_cross_area;
     
     /* net forces */
-    f_net = f_lift - (f_g + f_drag);
+    f_net = f_boyant - (f_g + f_drag);
+    
+
     
     /* Kenimatic Equations */
     /* https://en.wikipedia.org/wiki/Equations_of_motion */
@@ -167,7 +233,12 @@ int main(void)
     b_velo = b_velo + b_acel*t_inc;
     b_alti = b_alti + b_velo*t_inc + (0.5 * b_acel * pow(t_inc,2));
     
-    // printf("%f, %f, %f, %f, %f, %f, %f, %f, %f\n", t , f_net, f_drag, b_alti, b_velo, b_acel, b_pres, b_radius, b_volu);
+    print_count++;
+    if (print_count == print_deci){
+      //printf("%.1f, %f, %f, %f, %f, %f, %f\n", t, b_alti, b_pres, a_temp, h2_den, prdn_new.dn, f_boyant);
+      printf("%.1f, %f, %f, %f, %f, %f, %f, %f\n", t, b_alti, b_velo, b_acel, b_pres, b_radius, f_net, f_boyant);
+      print_count = 0;
+    }
     
     if (b_alti > max_alti) max_alti = b_alti;
 
@@ -180,6 +251,7 @@ int main(void)
   double asec = (amin - floor(amin))*60;
   
   /* calculate decent phase of flight */
+  print_count = 0;
   
   while(b_alti > land_ele) {
     /* calculate pressure at altitude */
@@ -192,14 +264,20 @@ int main(void)
     /* net forces */
     f_net = f_drag - f_g;
     
+    a_temp = calc_temp(b_alti);
+    
     /* Kenimatic Equations */
     /* https://en.wikipedia.org/wiki/Equations_of_motion */
     b_acel = f_net/b_mass;
     b_velo = b_velo + b_acel*t_inc;
     b_alti = b_alti + b_velo*t_inc + (0.5 * b_acel * pow(t_inc,2));
     
-    // printf("%f, %f, %f, %f, %f, %f, %f\n", t , f_net, f_drag, b_alti, b_velo, b_acel, b_pres);
-
+    print_count++;
+    if (print_count == print_deci){
+      //printf("%.1f, %f, %f, %f, %f, %f, %f, %f\n", t , f_net, f_drag, b_alti, b_velo, b_acel, b_pres, a_temp);
+      print_count = 0;
+    }
+    
     t += t_inc;   
     
   }
