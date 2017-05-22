@@ -6,10 +6,20 @@ newtype Celsius = Celsius Double deriving (Eq, Ord, Show)
 newtype M3 = M3 Double deriving (Eq, Ord, Show)
 newtype Second = Second Double deriving (Eq, Ord, Show)
 newtype Altitude = Altitude Double deriving (Eq, Ord, Show)
+newtype Latitude  = Latitude Double deriving (Eq, Ord, Show)
+newtype Longitude = Longitude Double deriving (Eq, Ord, Show)
 newtype Pressure = Pressure Double deriving (Eq, Ord, Show)
 newtype Density = Density Double deriving (Eq, Ord, Show)
 --newtype kg = kg deriving (Eq, Ord, Show)
 --newtype MolarMass = MolarMass deriving (Eq, Ord, Show)
+
+data Coordinate = Coordinate Latitude Longitude Altitude deriving (Show, Eq, Ord)
+
+data AzElCord =
+  AzelCord { azimuth    :: Double
+           , elevation  :: Double
+           , range      :: Double 
+           } 
 
 data PressureDensity =
   PressureDensity { pressure :: Pressure
@@ -27,8 +37,6 @@ data AltitudeRegionValues =
 data SimVals = 
   SimVals { t_inc     :: !Double
           , t         :: !Double
-          , ascent_r  :: !Double
-          , alti      :: !Double
           } deriving (Eq, Ord, Show)
 
 data PosVel = 
@@ -48,6 +56,7 @@ data Bvars =
         , launch_time   :: !Double
         , burst_vol     :: !Double
         , b_vol         :: !Double
+        , b_pres        :: !Double
         } deriving (Eq, Ord, Show)
         
 data Wind =
@@ -55,13 +64,14 @@ data Wind =
        , velo_y         :: !Double
        } deriving (Eq, Ord, Show)
        
-data Breturn = Breturn PosVel Bvars Wind
+data Breturn = Breturn SimVals PosVel Bvars Wind
 
 -- | constants
-m, r, g :: Double
-m = 0.0289644
-r = 8.3144598
-g = 9.80665
+m, r, g, er :: Double
+m   = 0.0289644
+r   = 8.3144598
+g   = 9.80665
+er  = 6378137.0
 
 --calculate new volume given an initial pressure and volume, and a new pressrure
 newVolume p v new_p = (p*v)/new_p
@@ -82,24 +92,29 @@ boyancy p_air p_gas v = (p_air-p_gas)*g*v
 drag den v flv cd a = (1/2)*den*((v-flv)**2)*cd*a
 
 -- calculate acceleration
-acel f m = f/m
+accel f m = f/m
 
 -- calculate velocity
 velo v a t = v + a*t
 
 -- calculate displacement
-displacement x v a t = x + (v*t) + ((1/2)*a*t**2)  
+displacement x v a t = x + (v*t) + ((1/2)*a*t**2)
+
+
+    
 
 altToValues :: Altitude -> AltitudeRegionValues
 altToValues (Altitude alt)
-  | alt < 11000 = AltitudeRegionValues  0     288.15 (-0.0065)     101325  1.225
-  | alt <= 20000 = AltitudeRegionValues 11000 216.65 0             22632.1 0.36391
-  | alt <= 32000 = AltitudeRegionValues 20000 216.65 0.001         5474.89 0.08803
-  | alt <= 47000 = AltitudeRegionValues 32000 228.65 0.0028        868.02  0.01322
-  | alt <= 51000 = AltitudeRegionValues 47000 270.65 0             110.91  0.00143
-  | alt <= 71000 = AltitudeRegionValues 51000 270.65 (-0.0028)     66.94   0.00086
-  | alt <= 86000 = AltitudeRegionValues 71000 214.65 0.002         3.96    0.000064
-  | otherwise = error "Altitude out of range (>86km)"
+  --                                    alt(m)Temp(K)  Lapse Rate    Pres(Pa)  Dens(kg/m^3)
+  | alt <= (-500) = error "Altitude out of range, too low (<500m)"
+  | alt <  11000  = AltitudeRegionValues 0     288.15  (-0.0065)     101325    1.225
+  | alt <= 20000  = AltitudeRegionValues 11000 216.65  0             22632.1   0.36391
+  | alt <= 32000  = AltitudeRegionValues 20000 216.65  0.001         5474.89   0.08803
+  | alt <= 47000  = AltitudeRegionValues 32000 228.65  0.0028        868.02    0.01322
+  | alt <= 51000  = AltitudeRegionValues 47000 270.65  0             110.91    0.00143
+  | alt <= 71000  = AltitudeRegionValues 51000 270.65  (-0.0028)     66.94     0.00086
+  | alt <= 86000  = AltitudeRegionValues 71000 214.65  0.002         3.96      0.000064
+  | otherwise     = error "Altitude out of range, too high (>86km)" 
   
 altToPressure :: Altitude -> PressureDensity
 altToPressure a@(Altitude alt) =
@@ -112,14 +127,55 @@ altToPressure a@(Altitude alt) =
            else rho' *
                 ((tb' / (tb' + lb' * (alt - hb')))**(1 + ((g * m) / (r * lb'))))
   in PressureDensity (Pressure pr) (Density dn)
-
---sim :: PosVel -> Bvars -> Wind -> Breturn
---sim (PosVel lat' lon' atl' vel_x' vel_y' vel_z') 
---    (Bvar mass' bal_cd' par_cd' packages_cd' launch_time' burst_dia' b_volume')
---    (Wind
---  | 
---  where
   
+printVals :: SimVals -> PosVel -> Bvars -> Wind -> IO()
+printVals (SimVals t_inc' t')
+    (PosVel lat' lon' alt' vel_x' vel_y' vel_z') 
+    (Bvar mass' bal_cd' par_cd' packages_cd' launch_time' burst_vol' b_volume' b_press')
+    (Wind wind_x' wind_y') =
+    print t
+    ++ " " ++ print lat'
+    ++ " " ++ print lon'
+
+sim :: SimVals -> PosVel -> Bvars -> Wind -> Breturn
+sim (SimVals t_inc' t')
+    (PosVel lat' lon' alt' vel_x' vel_y' vel_z') 
+    (Bvar mass' bal_cd' par_cd' packages_cd' launch_time' burst_vol' b_volume' b_press')
+    (Wind wind_x' wind_y')
+  -- if the burst volume has been reached print the values
+  -- otherwise tail recurse with the new updated values
+  | b_volume' >= burst_vol' = printVals Breturn
+  | sim (PosVel nlat nlon nAlt nvel_x nvel_y vel_z') (Bvar mass' bal_cd' par_cd' packages_cd' launch_time' burst_vol' nVol pres) (Wind wind_x' wind_y')
+  where
+    -- Getting pressure and density at current altitude
+    (PressureDensity pres dens) = altToPressure alt'
+    
+    -- Calculating volume, radius, and crossectional area
+    nVol    = newVolume b_press' b_volume' pres
+    nb_rad  = spRadFromVol nVol
+    nCAsph  = cAreaSp rb_rad
+    
+    -- Calculate drag force for winds
+    f_drag_x = drag dens vel_x' wind_x' bal_cd' nCAsph
+    f_drag_y = drag dens vel_y' wind_y' bal_cd' nCAsph
+    
+    -- Calculate Kenimatics
+    accel_x = accel f_drag_x mass'
+    accel_y = accel f_drag_y mass'
+    nvel_x = velo vel_x' accel_x t_inc'
+    nvel_y = velo vel_y' accel_y t_inc'
+    disp_x = displacement 0.0 nvel_x accel_x t_inc'
+    disp_y = displacement 0.0 nvel_y accel_y t_inc'
+    nAlt = displacement alt' vel_z' 0.0 t_inc'
+    
+    -- Calculate change in corrdinates
+    -- Because of the relatively small changes, we assume a spherical earth
+    drlat = (disp_y / (re + alt))
+    drlon = (disp_x / (re + alt))
+    dlat = drlat*(180/pi)
+    dlon = drlon*(180/pi)
+    nlat = lat' + nlat
+    nlon = lon' + nlon
   
   -- find the density and pressurefrom altitude
   --f_drag_x = drag den 
