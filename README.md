@@ -1,8 +1,10 @@
 # habsim
 High Altitude Balloon Simulator
 
-This is the beginning of a high altitude balloon simulator.
+This is the beginning of a high altitude balloon simulator. The haskell directory contains the start of a simplistic model to use with mapview on an upcoming balloon launch by the NOEXC club.
 
+
+Of the C code:
 Current functionality:
 
 * Calculates vertical ascent and decent of a balloon.

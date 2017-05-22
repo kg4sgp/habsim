@@ -39,13 +39,13 @@ prdn calc_pressure(double alt)
   } else if (alt <= 32000.0) {
     hb = 20000.0;
     tb = 216.65;
-    lb = 0.0003048;
+    lb = 0.001;
     pb = 5474.89;
     rho = 0.08803;
   } else if (alt <= 47000.0) {
     hb = 32000.0;
     tb = 228.65;
-    lb = 0.00085344;
+    lb = 0.0028;
     pb = 868.02;
     rho = 0.01322;
   } else if (alt <= 51000.0) {
@@ -57,13 +57,13 @@ prdn calc_pressure(double alt)
   } else if (alt <= 71000.0) {
     hb = 51000.0;
     tb = 270.65;
-    lb = -0.00085344;
+    lb = -0.0028;
     pb = 66.94;
     rho = 0.00086;
   } else if (alt <= 86000.0) {
     hb = 71000.0;
     tb = 214.65;
-    lb = 0.0006096;
+    lb = 0.002;
     pb = 3.96;
     rho = 0.000064;
   }
@@ -144,13 +144,14 @@ int main(void)
   double b_mass = 4.0;
   double b_alti = 0.0;
   double b_cd = 0.47;
-  double f_lift_kg = 2.62;
+  double f_lift_kg = 3.0;
   double b_diam = 2.0;
   double p_cd = 1.0;
   double p_cross_area = 0.22;
   double b_burst_dia = 5.0;
   double land_ele = 300.0;
   double f_boyant = 0.0;
+  double f_boyant_a = 0.0;
   
   /* calculated state variables for the balloon */
   double b_velo = 0.0;
@@ -170,6 +171,20 @@ int main(void)
   double adabatic_const = 0.0;
   double adabatic_temp = 0.0;
   double h2_den = 0.0;
+  /* lateral physics */
+  double b_acel_x = 0.0;
+  double b_acel_y = 0.0;
+  double b_velo_x = 0.0;
+  double b_velo_y = 0.0;
+  double b_disp_x = 0.0;
+  double b_disp_y = 0.0;
+  double w_velo_x = 10.0;
+  double w_velo_y = 10.0;
+  double lat_cd = 0.47;
+  double f_drag_x = 0.0;
+  double f_drag_y = 0.0;
+  double f_net_x = 0.0;
+  double f_net_y = 0.0;
   
   /* Simulation results */
   double max_alti = 0.0;
@@ -183,7 +198,8 @@ int main(void)
   prdn1 = calc_pressure(b_alti);
   b_pres = prdn1.pr;
   a_temp = calc_temp(b_alti);
-  adabatic_const = (b_pres*b_volu)/a_temp;
+  double gamma = 7.0/5.0;
+  adabatic_const = pow(b_pres, (1-gamma)) * pow(a_temp, gamma);
   
   
   /* print flight parameters */
@@ -210,21 +226,25 @@ int main(void)
     b_cross_area = M_PI * pow(b_radius, 2);
     
     a_temp = calc_temp(b_alti);
-    adabatic_temp = (b_pres*b_volu)/adabatic_const;
+    adabatic_temp = pow( (adabatic_const / pow(b_pres, (1-gamma)) ), (1/gamma));
     
     /* calculate h2 density */
     h2_den = gas_dens(mm_h2, b_pres, a_temp);
     
     /* calculate boyant force */
     f_boyant = boyancy(prdn_new.dn, h2_den, g, b_volu);
+    f_boyant_a = boyancy(prdn_new.dn, gas_dens(mm_h2, b_pres, adabatic_temp), g, b_volu);
     
     /* drag force - ascending balloon*/
     /* https://en.wikipedia.org/wiki/Drag_equation */
     f_drag = (0.5)*prdn_new.dn*pow(b_velo,2)*b_cd*b_cross_area;
+    f_drag_x = (0.5)*prdn_new.dn*pow((w_velo_x-b_velo_x),2)*lat_cd*b_cross_area;
+    f_drag_y = (0.5)*prdn_new.dn*pow((w_velo_y-b_velo_y),2)*lat_cd*b_cross_area;
     
     /* net forces */
-    f_net = f_boyant - (f_g + f_drag);
-    
+    f_net = f_boyant_a - (f_g + f_drag);
+    f_net_x = f_drag_x;
+    f_net_y = f_drag_y;
 
     
     /* Kenimatic Equations */
@@ -233,10 +253,19 @@ int main(void)
     b_velo = b_velo + b_acel*t_inc;
     b_alti = b_alti + b_velo*t_inc + (0.5 * b_acel * pow(t_inc,2));
     
+    b_acel_x = f_net_x/b_mass;
+    b_velo_x = b_velo_x + b_acel_x*t_inc;
+    b_disp_x = b_disp_x + b_velo_x*t_inc + (0.5 * b_acel_x * pow(t_inc,2));
+    
+    b_acel_y = f_net_y/b_mass;
+    b_velo_y = b_velo_y + b_acel_y*t_inc;
+    b_disp_y = b_disp_y + b_velo_y*t_inc + (0.5 * b_acel_y * pow(t_inc,2));
+    
     print_count++;
     if (print_count == print_deci){
       //printf("%.1f, %f, %f, %f, %f, %f, %f\n", t, b_alti, b_pres, a_temp, h2_den, prdn_new.dn, f_boyant);
-      printf("%.1f, %f, %f, %f, %f, %f, %f, %f\n", t, b_alti, b_velo, b_acel, b_pres, b_radius, f_net, f_boyant);
+      printf("%.1f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f\n", t, b_alti, b_velo, b_acel, b_pres, b_radius, f_net, f_boyant, b_disp_x, b_disp_y, b_velo_x, b_velo_y);
+      //printf("%.1f, %.2f %.3f, %.1f, %.1f, %.1f, %.1f\n", t, b_alti, b_velo, adabatic_temp, f_boyant, f_boyant_a, f_boyant - f_boyant_a);
       print_count = 0;
     }
     
