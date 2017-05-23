@@ -127,25 +127,18 @@ altToPressure a@(Altitude alt) =
            else rho' *
                 ((tb' / (tb' + lb' * (alt - hb')))**(1 + ((g * m) / (r * lb'))))
   in PressureDensity (Pressure pr) (Density dn)
-  
-printVals :: SimVals -> PosVel -> Bvars -> Wind -> IO()
-printVals (SimVals t_inc' t')
-    (PosVel lat' lon' alt' vel_x' vel_y' vel_z') 
-    (Bvar mass' bal_cd' par_cd' packages_cd' launch_time' burst_vol' b_volume' b_press')
-    (Wind wind_x' wind_y') =
-    print t
-    ++ " " ++ print lat'
-    ++ " " ++ print lon'
+
+main = print (sim (SimVals 0.01 0.0) (PosVel 0.0 0.0 0.0 0.0 0.0 3.0) (Bvars 2.0 0.47 1.0 0.5 0.0 540.0 5.0 120000.0) (Wind 4.0 4.0))
 
 sim :: SimVals -> PosVel -> Bvars -> Wind -> Breturn
 sim (SimVals t_inc' t')
     (PosVel lat' lon' alt' vel_x' vel_y' vel_z') 
-    (Bvar mass' bal_cd' par_cd' packages_cd' launch_time' burst_vol' b_volume' b_press')
+    (Bvars mass' bal_cd' par_cd' packages_cd' launch_time' burst_vol' b_volume' b_press')
     (Wind wind_x' wind_y')
   -- if the burst volume has been reached print the values
   -- otherwise tail recurse with the new updated values
-  | b_volume' >= burst_vol' = printVals Breturn
-  | sim (PosVel nlat nlon nAlt nvel_x nvel_y vel_z') (Bvar mass' bal_cd' par_cd' packages_cd' launch_time' burst_vol' nVol pres) (Wind wind_x' wind_y')
+  | b_volume' >= burst_vol' = Breturn (SimVals t_inc' t') (PosVel lat' lon' alt' vel_x' vel_y' vel_z') (Bvars mass' bal_cd' par_cd' packages_cd' launch_time' burst_vol' b_volume' b_press') (Wind wind_x' wind_y')
+  | otherwise = sim (SimVals t_inc' (t'+t_inc')) (PosVel nlat nlon nAlt nvel_x nvel_y vel_z') (Bvars mass' bal_cd' par_cd' packages_cd' launch_time' burst_vol' nVol pres) (Wind wind_x' wind_y')
   where
     -- Getting pressure and density at current altitude
     (PressureDensity pres dens) = altToPressure alt'
@@ -153,7 +146,7 @@ sim (SimVals t_inc' t')
     -- Calculating volume, radius, and crossectional area
     nVol    = newVolume b_press' b_volume' pres
     nb_rad  = spRadFromVol nVol
-    nCAsph  = cAreaSp rb_rad
+    nCAsph  = cAreaSp nb_rad
     
     -- Calculate drag force for winds
     f_drag_x = drag dens vel_x' wind_x' bal_cd' nCAsph
@@ -170,8 +163,8 @@ sim (SimVals t_inc' t')
     
     -- Calculate change in corrdinates
     -- Because of the relatively small changes, we assume a spherical earth
-    drlat = (disp_y / (re + alt))
-    drlon = (disp_x / (re + alt))
+    drlat = (disp_y / (er + alt))
+    drlon = (disp_x / (er + alt))
     dlat = drlat*(180/pi)
     dlon = drlon*(180/pi)
     nlat = lat' + nlat
