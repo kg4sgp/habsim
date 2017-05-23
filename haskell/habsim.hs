@@ -64,7 +64,7 @@ data Wind =
        , velo_y         :: !Double
        } deriving (Eq, Ord, Show)
        
-data Breturn = Breturn SimVals PosVel Bvars Wind
+data Breturn = Breturn SimVals PosVel Bvars Wind  deriving (Eq, Ord, Show)
 
 -- | constants
 m, r, g, er :: Double
@@ -141,7 +141,7 @@ sim (SimVals t_inc' t')
   | otherwise = sim (SimVals t_inc' (t'+t_inc')) (PosVel nlat nlon nAlt nvel_x nvel_y vel_z') (Bvars mass' bal_cd' par_cd' packages_cd' launch_time' burst_vol' nVol pres) (Wind wind_x' wind_y')
   where
     -- Getting pressure and density at current altitude
-    (PressureDensity pres dens) = altToPressure alt'
+    (PressureDensity (Pressure pres) (Density dens)) = altToPressure (Altitude alt')
     
     -- Calculating volume, radius, and crossectional area
     nVol    = newVolume b_press' b_volume' pres
@@ -163,8 +163,8 @@ sim (SimVals t_inc' t')
     
     -- Calculate change in corrdinates
     -- Because of the relatively small changes, we assume a spherical earth
-    drlat = (disp_y / (er + alt))
-    drlon = (disp_x / (er + alt))
+    drlat = (disp_y / (er + alt'))
+    drlon = (disp_x / (er + alt'))
     dlat = drlat*(180/pi)
     dlon = drlon*(180/pi)
     nlat = lat' + nlat
