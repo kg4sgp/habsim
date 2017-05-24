@@ -209,8 +209,8 @@ sim sv
     drlon = (disp_x / (er + alt''))
     dlat = drlat*(180/pi)
     dlon = drlon*(180/pi)
-    nlat = lat' + nlat
-    nlon = lon' + nlon
+    nlat = lat' + dlat
+    nlon = lon' + dlon
   
   -- find the density and pressurefrom altitude
   --f_drag_x = drag den 
