@@ -1,20 +1,25 @@
+{-# LANGUAGE CPP #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 module Main where
 
-newtype Pascal = Pascal Double deriving (Eq, Ord, Show)
-newtype Meter = Meter Double deriving (Eq, Ord, Show)
-newtype Celsius = Celsius Double deriving (Eq, Ord, Show)
-newtype M3 = M3 Double deriving (Eq, Ord, Show)
-newtype Second = Second Double deriving (Eq, Ord, Show)
-newtype Altitude = Altitude Double deriving (Eq, Ord, Show)
-newtype Latitude  = Latitude Double deriving (Eq, Ord, Show)
-newtype Longitude = Longitude Double deriving (Eq, Ord, Show)
-newtype Pressure = Pressure Double deriving (Eq, Ord, Show)
-newtype Density = Density Double deriving (Eq, Ord, Show)
-newtype Liter = Liter Double deriving (Eq, Ord, Show)
+#define DoubleGND Enum, Eq, Floating, Fractional, Num, Ord, Read, Real, \
+  RealFloat, RealFrac, Show
+
+newtype Pascal = Pascal Double deriving (DoubleGND)
+newtype Meter = Meter Double deriving (DoubleGND)
+newtype Celsius = Celsius Double deriving (DoubleGND)
+newtype M3 = M3 Double deriving (DoubleGND)
+newtype Second = Second Double deriving (DoubleGND)
+newtype Altitude = Altitude Double deriving (DoubleGND)
+newtype Latitude  = Latitude Double deriving (DoubleGND)
+newtype Longitude = Longitude Double deriving (DoubleGND)
+newtype Pressure = Pressure Double deriving (DoubleGND)
+newtype Density = Density Double deriving (DoubleGND)
+newtype Liter = Liter Double deriving (DoubleGND)
 type Volume = Liter
 
 -- TODO: What unit is this?
-newtype SphericalRadius = SphericalRadius Double deriving (Eq, Ord, Show)
+newtype SphericalRadius = SphericalRadius Double deriving (DoubleGND)
 
 --newtype kg = kg deriving (Eq, Ord, Show)
 --newtype MolarMass = MolarMass deriving (Eq, Ord, Show)
@@ -60,7 +65,7 @@ data Bvars =
         , par_cd        :: !Double
         , packages_cd   :: !Double
         , launch_time   :: !Double
-        , burst_vol     :: !Double
+        , burst_vol     :: Volume
         , b_vol         :: Volume
         , b_pres        :: !Double
         } deriving (Eq, Ord, Show)
@@ -143,16 +148,22 @@ altToPressure a@(Altitude alt) =
                 ((tb' / (tb' + lb' * (alt - hb')))**(1 + ((g * m) / (r * lb'))))
   in PressureDensity (Pressure pr) (Density dn)
 
-main = print (sim (SimVals 0.01 0.0) (PosVel 0.0 0.0 0.0 0.0 0.0 3.0) (Bvars 2.0 0.47 1.0 0.5 0.0 540.0 (Liter 5.0) 120000.0) (Wind 4.0 4.0))
+main :: IO ()
+main = do
+  let sv = SimVals 0.01 0.0
+      pv = PosVel 0.0 0.0 0.0 0.0 0.0 3.0
+      bv = Bvars 2.0 0.47 1.0 0.5 0.0 540.0 (Liter 5.0) 120000.0
+      w = Wind 4.0 4.0
+  print $ sim sv pv bv w
 
 sim :: SimVals -> PosVel -> Bvars -> Wind -> Breturn
 sim (SimVals t_inc' t')
     (PosVel lat' lon' alt' vel_x' vel_y' vel_z') 
-    (Bvars mass' bal_cd' par_cd' packages_cd' launch_time' burst_vol' (Liter b_volume') b_press')
+    (Bvars mass' bal_cd' par_cd' packages_cd' launch_time' burst_vol' b_volume' b_press')
     (Wind wind_x' wind_y')
   -- if the burst volume has been reached print the values
   -- otherwise tail recurse with the new updated values
-  | b_volume' >= burst_vol' = Breturn (SimVals t_inc' t') (PosVel lat' lon' alt' vel_x' vel_y' vel_z') (Bvars mass' bal_cd' par_cd' packages_cd' launch_time' burst_vol' (Liter b_volume') b_press') (Wind wind_x' wind_y')
+  | b_volume' >= burst_vol' = Breturn (SimVals t_inc' t') (PosVel lat' lon' alt' vel_x' vel_y' vel_z') (Bvars mass' bal_cd' par_cd' packages_cd' launch_time' burst_vol' b_volume' b_press') (Wind wind_x' wind_y')
   | otherwise = sim (SimVals t_inc' (t'+t_inc')) (PosVel nlat nlon nAlt nvel_x nvel_y vel_z') (Bvars mass' bal_cd' par_cd' packages_cd' launch_time' burst_vol' nVol pres) (Wind wind_x' wind_y')
   where
     -- Getting pressure and density at current altitude
@@ -161,7 +172,7 @@ sim (SimVals t_inc' t')
     -- Calculating volume, radius, and crossectional area
     -- TODO: Make Bvars hold the boxed variants of these rather than boxing
     -- them here!
-    nVol = newVolume (Pressure b_press') (Liter b_volume') (Pressure pres)
+    nVol = newVolume (Pressure b_press') b_volume' (Pressure pres)
     SphericalRadius nbRad = spRadFromVol nVol
     nCAsph  = cAreaSp nbRad
     
