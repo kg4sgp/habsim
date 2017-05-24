@@ -2,6 +2,9 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 module Main where
 
+import Control.Monad.Writer
+import qualified Data.DList as D
+
 #define DoubleGND Enum, Eq, Floating, Fractional, Num, Ord, Read, Real, \
   RealFloat, RealFrac, Show
 
@@ -159,26 +162,27 @@ main = do
       pv = PosVel 0.0 0.0 0.0 0.0 0.0 3.0
       bv = Bvars 2.0 0.47 1.0 0.5 0.0 540.0 (Liter 5.0) 120000.0
       w = Wind 4.0 4.0
-  print $ sim sv pv bv w
+  mapM_ print . snd . runWriter $ sim sv pv bv w
 
-sim :: SimVals -> PosVel -> Bvars -> Wind -> Breturn
+sim :: SimVals -> PosVel -> Bvars -> Wind -> Writer (D.DList Breturn) Breturn
 sim sv
     (PosVel lat' lon' alt'@(Altitude alt'') vel_x' vel_y' vel_z')
     (Bvars mass' bal_cd' par_cd' packages_cd' launch_time' burst_vol' b_volume' b_press')
     (Wind wind_x' wind_y')
   -- if the burst volume has been reached print the values
   -- otherwise tail recurse with the new updated values
-  | b_volume' >= burst_vol' =
+  | b_volume' >= burst_vol' = do
     let pv = PosVel lat' lon' alt' vel_x' vel_y' vel_z'
         bv = Bvars mass' bal_cd' par_cd' packages_cd' launch_time' burst_vol' b_volume' b_press'
         w = Wind wind_x' wind_y'
-    in Breturn sv pv bv w
-  | otherwise =
+    return (Breturn sv pv bv w)
+  | otherwise = do
     let sv' = sv { t = t sv + t_inc sv }
         pv = PosVel nlat nlon nAlt nvel_x nvel_y vel_z'
         bv = Bvars mass' bal_cd' par_cd' packages_cd' launch_time' burst_vol' nVol pres
         w = Wind wind_x' wind_y'
-    in sim sv' pv bv w
+    tell (D.singleton $ Breturn sv pv bv w)
+    sim sv' pv bv w
   where
     -- Getting pressure and density at current altitude
     PressureDensity pres dens = altToPressure alt'
