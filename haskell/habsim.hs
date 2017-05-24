@@ -201,7 +201,7 @@ sim sv
     nvel_y = velo vel_y' accel_y sv
     Altitude disp_x = displacement (Altitude 0.0) nvel_x accel_x sv
     Altitude disp_y = displacement (Altitude 0.0) nvel_y accel_y sv
-    nAlt@(Altitude nAlt') = displacement alt' vel_z' 0.0 sv
+    nAlt = displacement alt' vel_z' 0.0 sv
     
     -- Calculate change in corrdinates
     -- Because of the relatively small changes, we assume a spherical earth
