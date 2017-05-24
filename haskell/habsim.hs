@@ -10,6 +10,8 @@ newtype Latitude  = Latitude Double deriving (Eq, Ord, Show)
 newtype Longitude = Longitude Double deriving (Eq, Ord, Show)
 newtype Pressure = Pressure Double deriving (Eq, Ord, Show)
 newtype Density = Density Double deriving (Eq, Ord, Show)
+newtype Liter = Liter Double deriving (Eq, Ord, Show)
+type Volume = Liter
 --newtype kg = kg deriving (Eq, Ord, Show)
 --newtype MolarMass = MolarMass deriving (Eq, Ord, Show)
 
@@ -74,9 +76,9 @@ g   = 9.80665
 er  = 6378137.0
 
 -- | Calculate new volume given an initial pressure and volume, and a new
--- pressure.
-newVolume :: Fractional a => a -> a -> a -> a
-newVolume p v new_p = (p*v)/new_p
+-- pressure
+newVolume :: Pressure -> Volume -> Pressure -> Volume
+newVolume (Pressure p1) (Liter v) (Pressure p2) = Liter $ (p1 * v) / p2
 
 -- | Calculate sphereical radius from volume
 spRadFromVol :: Floating a => a -> a
@@ -153,7 +155,9 @@ sim (SimVals t_inc' t')
     (PressureDensity (Pressure pres) (Density dens)) = altToPressure (Altitude alt')
     
     -- Calculating volume, radius, and crossectional area
-    nVol    = newVolume b_press' b_volume' pres
+    -- TODO: Make Bvars hold the boxed variants of these rather than boxing
+    -- them here!
+    Liter nVol = newVolume (Pressure b_press') (Liter b_volume') (Pressure pres)
     nb_rad  = spRadFromVol nVol
     nCAsph  = cAreaSp nb_rad
     
