@@ -9,11 +9,7 @@ module Main where
 -- @dimensional@ package instead. We can still wrap them in newtypes, but we'll
 -- get extra type-safety this way, at the cost of possibly some syntactical
 -- annoyance. The trade-off seems worth it to me.
-newtype Pascal = Pascal Double deriving (DoubleGND)
 newtype Meter = Meter Double deriving (DoubleGND)
-newtype Celsius = Celsius Double deriving (DoubleGND)
-newtype M3 = M3 Double deriving (DoubleGND)
-newtype Second = Second Double deriving (DoubleGND)
 newtype Altitude = Altitude Double deriving (DoubleGND)
 newtype Latitude  = Latitude Double deriving (DoubleGND)
 newtype Longitude = Longitude Double deriving (DoubleGND)
@@ -33,16 +29,12 @@ newtype Displacement = Displacement Double deriving (DoubleGND)
 type Volume = Liter
 type SphericalRadius = Meter
 
-
---newtype kg = kg deriving (Eq, Ord, Show)
---newtype MolarMass = MolarMass deriving (Eq, Ord, Show)
-
 data Coordinate = Coordinate Latitude Longitude Altitude deriving (Show, Eq, Ord)
 
 data AzElCord =
-  AzelCord { azimuth    :: Double
-           , elevation  :: Double
-           , range      :: Double 
+  AzelCord { azimuth    :: !Double
+           , elevation  :: !Double
+           , range      :: !Double 
            } 
 
 data PressureDensity =
