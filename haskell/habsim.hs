@@ -16,7 +16,7 @@ newtype Longitude = Longitude Double deriving (DoubleGND)
 newtype Pressure = Pressure Double deriving (DoubleGND)
 newtype Density = Density Double deriving (DoubleGND)
 newtype Liter = Liter Double deriving (DoubleGND)
-newtype WindMPH = WindMPH Double deriving (DoubleGND)
+newtype WindMs = WindMs Double deriving (DoubleGND)
 newtype CoeffDrag = CoeffDrag Double deriving (DoubleGND)
 newtype Velocity = Velocity Double deriving (DoubleGND)
 newtype CrossSecArea = CrossSecArea Double deriving (DoubleGND)
@@ -68,7 +68,7 @@ data Bvars =
   Bvars { mass          :: Mass
         , bal_cd        :: CoeffDrag
         , par_cd        :: CoeffDrag
-        , packages_cd   :: !Double
+        , packages_cd   :: CoeffDrag
         , launch_time   :: !Double
         , burst_vol     :: Volume
         , b_vol         :: Volume
@@ -76,8 +76,8 @@ data Bvars =
         } deriving (Eq, Ord, Show)
         
 data Wind =
-  Wind { velo_x         :: WindMPH
-       , velo_y         :: WindMPH
+  Wind { velo_x         :: WindMs
+       , velo_y         :: WindMs
        } deriving (Eq, Ord, Show)
        
 data Breturn = Breturn SimVals PosVel Bvars Wind  deriving (Eq, Ord, Show)
@@ -111,8 +111,8 @@ boyancy :: Double -> Double -> Double -> Double
 boyancy p_air p_gas v = (p_air-p_gas)*g*v
 
 -- Calculate drag.
-drag :: Density -> Velocity -> WindMPH -> CoeffDrag -> CrossSecArea -> DragForce
-drag (Density d) (Velocity v) (WindMPH w) (CoeffDrag c) (CrossSecArea a) =
+drag :: Density -> Velocity -> WindMs -> CoeffDrag -> CrossSecArea -> DragForce
+drag (Density d) (Velocity v) (WindMs w) (CoeffDrag c) (CrossSecArea a) =
   DragForce $ (1 / 2) * d * ((v - w) ** 2) * c * a
 
 -- Calculate acceleration.
@@ -211,6 +211,59 @@ sim sv
     dlon = drlon*(180/pi)
     nlat = lat' + dlat
     nlon = lon' + dlon
+    
+simDescent :: SimVals -> PosVel -> Bvars -> Wind -> Breturn
+simDescent sv
+    (PosVel lat' lon' alt'@(Altitude alt'') vel_x' vel_y' vel_z') 
+    (Bvars mass' bal_cd' par_cd' packages_cd' launch_time' burst_vol' b_volume' b_press')
+    (Wind wind_x' wind_y')
+  | alt' < 0 =
+    let pv = PosVel lat' lon' alt' vel_x' vel_y' vel_z'
+        bv = Bvars mass' bal_cd' par_cd' packages_cd' launch_time' burst_vol' b_volume' b_press'
+        w = Wind wind_x' wind_y'
+    in Breturn sv pv bv w
+  | otherwise =
+    let sv' = sv { t = t sv + t_inc sv }
+        pv = PosVel nlat nlon nAlt nvel_x nvel_y nvel_z
+        bv = Bvars mass' bal_cd' par_cd' packages_cd' launch_time' burst_vol' b_volume' b_press'
+        w = Wind wind_x' wind_y'
+    in simDescent sv' pv bv w
+  where
+    -- Getting pressure and density at current altitude
+    PressureDensity pres dens = altToPressure alt'
+    
+    -- Calculate drag force for winds and parachute
+    f_drag_x = drag dens vel_x' wind_x' packages_cd'  1
+    f_drag_y = drag dens vel_y' wind_y' packages_cd'  1
+    f_drag_z = drag dens vel_z' 0       par_cd'       1
+    
+    -- fore of gravity and net forces in z
+    f_g = mass' * g
+    f_net_z = f_drag_z - f_g
+    
+    -- Calculate Kenimatics
+    accel_x = accel f_drag_x mass'
+    accel_y = accel f_drag_y mass'
+    accel_z = accel f_net_z mass'
+    nvel_x = velo vel_x' accel_x sv
+    nvel_y = velo vel_y' accel_y sv
+    nvel_z = velo vel_z' accel_z sv
+    Altitude disp_x = displacement (Altitude 0.0) nvel_x accel_x sv
+    Altitude disp_y = displacement (Altitude 0.0) nvel_y accel_y sv
+    nAlt = displacement alt' vel_z' 0.0 sv
+    
+    -- Calculate change in corrdinates
+    -- Because of the relatively small changes, we assume a spherical earth
+    drlat = (disp_y / (er + alt''))
+    drlon = (disp_x / (er + alt''))
+    dlat = drlat*(180/pi)
+    dlon = drlon*(180/pi)
+    nlat = lat' + dlat
+    nlon = lon' + dlon
+    
+    
+
+
   
   -- find the density and pressurefrom altitude
   --f_drag_x = drag den 
