@@ -73,33 +73,42 @@ r   = 8.3144598
 g   = 9.80665
 er  = 6378137.0
 
---calculate new volume given an initial pressure and volume, and a new pressrure
+-- | Calculate new volume given an initial pressure and volume, and a new
+-- pressure.
+newVolume :: Fractional a => a -> a -> a -> a
 newVolume p v new_p = (p*v)/new_p
 
--- calculate sphereical radius from volume
+-- | Calculate sphereical radius from volume
+spRadFromVol :: Floating a => a -> a
 spRadFromVol v = ((3*v)/(4*pi))**(1/3)
 
--- calculate cross sectional area of sphere
+-- Calculate cross sectional area of sphere.
+cAreaSp :: Floating a => a -> a
 cAreaSp r = pi*(r**2)
 
--- calculate gas density given molar mass, temp and pressure
+-- Calculate gas density given molar mass, temp and pressure.
+gas_dens :: Double -> Double -> Double -> Double
 gas_dens mm p t = (mm*p)/(r*t)
 
--- | calculate boyancy
+-- | Calculate boyancy.
+boyancy :: Double -> Double -> Double -> Double
 boyancy p_air p_gas v = (p_air-p_gas)*g*v
 
--- calculate drag
+-- Calculate drag.
+drag :: Floating a => a -> a -> a -> a -> a -> a
 drag den v flv cd a = (1/2)*den*((v-flv)**2)*cd*a
 
--- calculate acceleration
+-- Calculate acceleration.
+accel :: Fractional a => a -> a -> a
 accel f m = f/m
 
--- calculate velocity
+-- Calculate velocity.
+velo :: Num a => a -> a -> a -> a
 velo v a t = v + a*t
 
--- calculate displacement
+-- Calculate displacement.
+displacement :: Floating a => a -> a -> a -> a -> a
 displacement x v a t = x + (v*t) + ((1/2)*a*t**2)
-
 
     
 
