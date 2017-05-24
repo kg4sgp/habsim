@@ -4,6 +4,7 @@ module Main where
 
 import Control.Monad.Writer
 import qualified Data.DList as D
+import Data.Foldable (traverse_)
 
 #define DoubleGND Enum, Eq, Floating, Fractional, Num, Ord, Read, Real, \
   RealFloat, RealFrac, Show
@@ -162,7 +163,7 @@ main = do
       pv = PosVel 0.0 0.0 0.0 0.0 0.0 3.0
       bv = Bvars 2.0 0.47 1.0 0.5 0.0 540.0 (Liter 5.0) 120000.0
       w = Wind 4.0 4.0
-  mapM_ print . snd . runWriter $ sim sv pv bv w
+  traverse_ print . snd . runWriter $ sim sv pv bv w
 
 sim :: SimVals -> PosVel -> Bvars -> Wind -> Writer (D.DList Breturn) Breturn
 sim sv
