@@ -163,8 +163,18 @@ sim (SimVals t_inc' t')
     (Wind wind_x' wind_y')
   -- if the burst volume has been reached print the values
   -- otherwise tail recurse with the new updated values
-  | b_volume' >= burst_vol' = Breturn (SimVals t_inc' t') (PosVel lat' lon' alt' vel_x' vel_y' vel_z') (Bvars mass' bal_cd' par_cd' packages_cd' launch_time' burst_vol' b_volume' b_press') (Wind wind_x' wind_y')
-  | otherwise = sim (SimVals t_inc' (t'+t_inc')) (PosVel nlat nlon nAlt nvel_x nvel_y vel_z') (Bvars mass' bal_cd' par_cd' packages_cd' launch_time' burst_vol' nVol pres) (Wind wind_x' wind_y')
+  | b_volume' >= burst_vol' =
+    let sv = SimVals t_inc' t'
+        pv = PosVel lat' lon' alt' vel_x' vel_y' vel_z'
+        bv = Bvars mass' bal_cd' par_cd' packages_cd' launch_time' burst_vol' b_volume' b_press'
+        w = Wind wind_x' wind_y'
+    in Breturn sv pv bv w
+  | otherwise =
+    let sv = SimVals t_inc' (t'+t_inc')
+        pv = PosVel nlat nlon nAlt nvel_x nvel_y vel_z'
+        bv = Bvars mass' bal_cd' par_cd' packages_cd' launch_time' burst_vol' nVol pres
+        w = Wind wind_x' wind_y'
+    in sim sv pv bv w
   where
     -- Getting pressure and density at current altitude
     PressureDensity (Pressure pres) (Density dens) = altToPressure (Altitude alt')
