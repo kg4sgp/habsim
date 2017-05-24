@@ -12,6 +12,10 @@ newtype Pressure = Pressure Double deriving (Eq, Ord, Show)
 newtype Density = Density Double deriving (Eq, Ord, Show)
 newtype Liter = Liter Double deriving (Eq, Ord, Show)
 type Volume = Liter
+
+-- TODO: What unit is this?
+newtype SphericalRadius = SphericalRadius Double deriving (Eq, Ord, Show)
+
 --newtype kg = kg deriving (Eq, Ord, Show)
 --newtype MolarMass = MolarMass deriving (Eq, Ord, Show)
 
@@ -57,7 +61,7 @@ data Bvars =
         , packages_cd   :: !Double
         , launch_time   :: !Double
         , burst_vol     :: !Double
-        , b_vol         :: !Double
+        , b_vol         :: Volume
         , b_pres        :: !Double
         } deriving (Eq, Ord, Show)
         
@@ -81,8 +85,8 @@ newVolume :: Pressure -> Volume -> Pressure -> Volume
 newVolume (Pressure p1) (Liter v) (Pressure p2) = Liter $ (p1 * v) / p2
 
 -- | Calculate sphereical radius from volume
-spRadFromVol :: Floating a => a -> a
-spRadFromVol v = ((3*v)/(4*pi))**(1/3)
+spRadFromVol :: Volume -> SphericalRadius
+spRadFromVol (Liter v) = SphericalRadius $ ((3 * v) / (4 * pi)) ** (1 / 3)
 
 -- Calculate cross sectional area of sphere.
 cAreaSp :: Floating a => a -> a
@@ -139,27 +143,27 @@ altToPressure a@(Altitude alt) =
                 ((tb' / (tb' + lb' * (alt - hb')))**(1 + ((g * m) / (r * lb'))))
   in PressureDensity (Pressure pr) (Density dn)
 
-main = print (sim (SimVals 0.01 0.0) (PosVel 0.0 0.0 0.0 0.0 0.0 3.0) (Bvars 2.0 0.47 1.0 0.5 0.0 540.0 5.0 120000.0) (Wind 4.0 4.0))
+main = print (sim (SimVals 0.01 0.0) (PosVel 0.0 0.0 0.0 0.0 0.0 3.0) (Bvars 2.0 0.47 1.0 0.5 0.0 540.0 (Liter 5.0) 120000.0) (Wind 4.0 4.0))
 
 sim :: SimVals -> PosVel -> Bvars -> Wind -> Breturn
 sim (SimVals t_inc' t')
     (PosVel lat' lon' alt' vel_x' vel_y' vel_z') 
-    (Bvars mass' bal_cd' par_cd' packages_cd' launch_time' burst_vol' b_volume' b_press')
+    (Bvars mass' bal_cd' par_cd' packages_cd' launch_time' burst_vol' (Liter b_volume') b_press')
     (Wind wind_x' wind_y')
   -- if the burst volume has been reached print the values
   -- otherwise tail recurse with the new updated values
-  | b_volume' >= burst_vol' = Breturn (SimVals t_inc' t') (PosVel lat' lon' alt' vel_x' vel_y' vel_z') (Bvars mass' bal_cd' par_cd' packages_cd' launch_time' burst_vol' b_volume' b_press') (Wind wind_x' wind_y')
+  | b_volume' >= burst_vol' = Breturn (SimVals t_inc' t') (PosVel lat' lon' alt' vel_x' vel_y' vel_z') (Bvars mass' bal_cd' par_cd' packages_cd' launch_time' burst_vol' (Liter b_volume') b_press') (Wind wind_x' wind_y')
   | otherwise = sim (SimVals t_inc' (t'+t_inc')) (PosVel nlat nlon nAlt nvel_x nvel_y vel_z') (Bvars mass' bal_cd' par_cd' packages_cd' launch_time' burst_vol' nVol pres) (Wind wind_x' wind_y')
   where
     -- Getting pressure and density at current altitude
-    (PressureDensity (Pressure pres) (Density dens)) = altToPressure (Altitude alt')
+    PressureDensity (Pressure pres) (Density dens) = altToPressure (Altitude alt')
     
     -- Calculating volume, radius, and crossectional area
     -- TODO: Make Bvars hold the boxed variants of these rather than boxing
     -- them here!
-    Liter nVol = newVolume (Pressure b_press') (Liter b_volume') (Pressure pres)
-    nb_rad  = spRadFromVol nVol
-    nCAsph  = cAreaSp nb_rad
+    nVol = newVolume (Pressure b_press') (Liter b_volume') (Pressure pres)
+    SphericalRadius nbRad = spRadFromVol nVol
+    nCAsph  = cAreaSp nbRad
     
     -- Calculate drag force for winds
     f_drag_x = drag dens vel_x' wind_x' bal_cd' nCAsph
