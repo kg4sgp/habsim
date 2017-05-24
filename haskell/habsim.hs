@@ -5,6 +5,10 @@ module Main where
 #define DoubleGND Enum, Eq, Floating, Fractional, Num, Ord, Read, Real, \
   RealFloat, RealFrac, Show
 
+-- I'd like to see us get rid of these and maybe use something like the
+-- @dimensional@ package instead. We can still wrap them in newtypes, but we'll
+-- get extra type-safety this way, at the cost of possibly some syntactical
+-- annoyance. The trade-off seems worth it to me.
 newtype Pascal = Pascal Double deriving (DoubleGND)
 newtype Meter = Meter Double deriving (DoubleGND)
 newtype Celsius = Celsius Double deriving (DoubleGND)
@@ -16,10 +20,19 @@ newtype Longitude = Longitude Double deriving (DoubleGND)
 newtype Pressure = Pressure Double deriving (DoubleGND)
 newtype Density = Density Double deriving (DoubleGND)
 newtype Liter = Liter Double deriving (DoubleGND)
-type Volume = Liter
+newtype WindMPH = WindMPH Double deriving (DoubleGND)
+newtype CoeffDrag = CoeffDrag Double deriving (DoubleGND)
+newtype Velocity = Velocity Double deriving (DoubleGND)
+newtype CrossSecArea = CrossSecArea Double deriving (DoubleGND)
+newtype DragForce = DragForce Double deriving (DoubleGND)
+newtype Acceleration = Acceleration Double deriving (DoubleGND)
+newtype Mass = Mass Double deriving (DoubleGND)
+newtype Displacement = Displacement Double deriving (DoubleGND)
 
--- TODO: What unit is this?
-newtype SphericalRadius = SphericalRadius Double deriving (DoubleGND)
+-- Useful aliases
+type Volume = Liter
+type SphericalRadius = Meter
+
 
 --newtype kg = kg deriving (Eq, Ord, Show)
 --newtype MolarMass = MolarMass deriving (Eq, Ord, Show)
@@ -53,26 +66,26 @@ data SimVals =
 data PosVel = 
   PosVel {  lat       :: !Double
           , lon       :: !Double
-          , alt       :: !Double
-          , vel_x     :: !Double
-          , vel_y     :: !Double
-          , vel_z     :: !Double
+          , alt       :: Altitude
+          , vel_x     :: Velocity
+          , vel_y     :: Velocity
+          , vel_z     :: Velocity
           } deriving (Eq, Ord, Show)
           
 data Bvars =
-  Bvars { mass          :: !Double
-        , bal_cd        :: !Double
-        , par_cd        :: !Double
+  Bvars { mass          :: Mass
+        , bal_cd        :: CoeffDrag
+        , par_cd        :: CoeffDrag
         , packages_cd   :: !Double
         , launch_time   :: !Double
         , burst_vol     :: Volume
         , b_vol         :: Volume
-        , b_pres        :: !Double
+        , b_pres        :: Pressure
         } deriving (Eq, Ord, Show)
         
 data Wind =
-  Wind { velo_x         :: !Double
-       , velo_y         :: !Double
+  Wind { velo_x         :: WindMPH
+       , velo_y         :: WindMPH
        } deriving (Eq, Ord, Show)
        
 data Breturn = Breturn SimVals PosVel Bvars Wind  deriving (Eq, Ord, Show)
@@ -91,11 +104,11 @@ newVolume (Pressure p1) (Liter v) (Pressure p2) = Liter $ (p1 * v) / p2
 
 -- | Calculate sphereical radius from volume
 spRadFromVol :: Volume -> SphericalRadius
-spRadFromVol (Liter v) = SphericalRadius $ ((3 * v) / (4 * pi)) ** (1 / 3)
+spRadFromVol (Liter v) = Meter $ ((3 * v) / (4 * pi)) ** (1 / 3)
 
 -- Calculate cross sectional area of sphere.
-cAreaSp :: Floating a => a -> a
-cAreaSp r = pi*(r**2)
+cAreaSp :: Double -> CrossSecArea
+cAreaSp r = CrossSecArea $ pi * (r ** 2)
 
 -- Calculate gas density given molar mass, temp and pressure.
 gas_dens :: Double -> Double -> Double -> Double
@@ -106,22 +119,22 @@ boyancy :: Double -> Double -> Double -> Double
 boyancy p_air p_gas v = (p_air-p_gas)*g*v
 
 -- Calculate drag.
-drag :: Floating a => a -> a -> a -> a -> a -> a
-drag den v flv cd a = (1/2)*den*((v-flv)**2)*cd*a
+drag :: Density -> Velocity -> WindMPH -> CoeffDrag -> CrossSecArea -> DragForce
+drag (Density d) (Velocity v) (WindMPH w) (CoeffDrag c) (CrossSecArea a) =
+  DragForce $ (1 / 2) * d * ((v - w) ** 2) * c * a
 
 -- Calculate acceleration.
-accel :: Fractional a => a -> a -> a
-accel f m = f/m
+accel :: DragForce -> Mass -> Acceleration
+accel (DragForce f) (Mass m) = Acceleration $ f / m
 
 -- Calculate velocity.
-velo :: Num a => a -> a -> a -> a
-velo v a t = v + a*t
+velo :: Velocity -> Acceleration -> SimVals -> Velocity
+velo (Velocity v) (Acceleration a) (SimVals t _) = Velocity $ v + a * t
 
 -- Calculate displacement.
-displacement :: Floating a => a -> a -> a -> a -> a
-displacement x v a t = x + (v*t) + ((1/2)*a*t**2)
-
-    
+displacement :: Altitude -> Velocity -> Acceleration -> SimVals -> Altitude {-Displacement-}
+displacement (Altitude x) (Velocity v) (Acceleration a) (SimVals t _) =
+  Altitude $ x + (v * t) + ((1 / 2) * a * t ** 2)
 
 altToValues :: Altitude -> AltitudeRegionValues
 altToValues (Altitude alt)
@@ -157,33 +170,32 @@ main = do
   print $ sim sv pv bv w
 
 sim :: SimVals -> PosVel -> Bvars -> Wind -> Breturn
-sim (SimVals t_inc' t')
-    (PosVel lat' lon' alt' vel_x' vel_y' vel_z') 
+sim sv
+    (PosVel lat' lon' alt'@(Altitude alt'') vel_x' vel_y' vel_z') 
     (Bvars mass' bal_cd' par_cd' packages_cd' launch_time' burst_vol' b_volume' b_press')
     (Wind wind_x' wind_y')
   -- if the burst volume has been reached print the values
   -- otherwise tail recurse with the new updated values
   | b_volume' >= burst_vol' =
-    let sv = SimVals t_inc' t'
-        pv = PosVel lat' lon' alt' vel_x' vel_y' vel_z'
+    let pv = PosVel lat' lon' alt' vel_x' vel_y' vel_z'
         bv = Bvars mass' bal_cd' par_cd' packages_cd' launch_time' burst_vol' b_volume' b_press'
         w = Wind wind_x' wind_y'
     in Breturn sv pv bv w
   | otherwise =
-    let sv = SimVals t_inc' (t'+t_inc')
+    let sv' = sv { t = t sv + t_inc sv }
         pv = PosVel nlat nlon nAlt nvel_x nvel_y vel_z'
         bv = Bvars mass' bal_cd' par_cd' packages_cd' launch_time' burst_vol' nVol pres
         w = Wind wind_x' wind_y'
-    in sim sv pv bv w
+    in sim sv' pv bv w
   where
     -- Getting pressure and density at current altitude
-    PressureDensity (Pressure pres) (Density dens) = altToPressure (Altitude alt')
+    PressureDensity pres dens = altToPressure alt'
     
     -- Calculating volume, radius, and crossectional area
     -- TODO: Make Bvars hold the boxed variants of these rather than boxing
     -- them here!
-    nVol = newVolume (Pressure b_press') b_volume' (Pressure pres)
-    SphericalRadius nbRad = spRadFromVol nVol
+    nVol = newVolume b_press' b_volume' pres
+    Meter nbRad = spRadFromVol nVol
     nCAsph  = cAreaSp nbRad
     
     -- Calculate drag force for winds
@@ -193,16 +205,16 @@ sim (SimVals t_inc' t')
     -- Calculate Kenimatics
     accel_x = accel f_drag_x mass'
     accel_y = accel f_drag_y mass'
-    nvel_x = velo vel_x' accel_x t_inc'
-    nvel_y = velo vel_y' accel_y t_inc'
-    disp_x = displacement 0.0 nvel_x accel_x t_inc'
-    disp_y = displacement 0.0 nvel_y accel_y t_inc'
-    nAlt = displacement alt' vel_z' 0.0 t_inc'
+    nvel_x = velo vel_x' accel_x sv
+    nvel_y = velo vel_y' accel_y sv
+    Altitude disp_x = displacement (Altitude 0.0) nvel_x accel_x sv
+    Altitude disp_y = displacement (Altitude 0.0) nvel_y accel_y sv
+    nAlt@(Altitude nAlt') = displacement alt' vel_z' 0.0 sv
     
     -- Calculate change in corrdinates
     -- Because of the relatively small changes, we assume a spherical earth
-    drlat = (disp_y / (er + alt'))
-    drlon = (disp_x / (er + alt'))
+    drlat = (disp_y / (er + alt''))
+    drlon = (disp_x / (er + alt''))
     dlat = drlat*(180/pi)
     dlon = drlon*(180/pi)
     nlat = lat' + nlat
