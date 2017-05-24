@@ -34,8 +34,8 @@ data Coordinate = Coordinate Latitude Longitude Altitude deriving (Show, Eq, Ord
 data AzElCord =
   AzelCord { azimuth    :: !Double
            , elevation  :: !Double
-           , range      :: !Double 
-           } 
+           , range      :: !Double
+           }
 
 data PressureDensity =
   PressureDensity { pressure :: Pressure
@@ -50,12 +50,12 @@ data AltitudeRegionValues =
                        , rho :: !Double
                        } deriving (Eq, Ord, Show)
 
-data SimVals = 
+data SimVals =
   SimVals { t_inc     :: !Double
           , t         :: !Double
           } deriving (Eq, Ord, Show)
 
-data PosVel = 
+data PosVel =
   PosVel {  lat       :: !Double
           , lon       :: !Double
           , alt       :: Altitude
@@ -63,7 +63,7 @@ data PosVel =
           , vel_y     :: Velocity
           , vel_z     :: Velocity
           } deriving (Eq, Ord, Show)
-          
+
 data Bvars =
   Bvars { mass          :: Mass
         , bal_cd        :: CoeffDrag
@@ -74,12 +74,12 @@ data Bvars =
         , b_vol         :: Volume
         , b_pres        :: Pressure
         } deriving (Eq, Ord, Show)
-        
+
 data Wind =
   Wind { velo_x         :: WindMs
        , velo_y         :: WindMs
        } deriving (Eq, Ord, Show)
-       
+
 data Breturn = Breturn SimVals PosVel Bvars Wind  deriving (Eq, Ord, Show)
 
 -- | constants
@@ -139,8 +139,8 @@ altToValues (Altitude alt)
   | alt <= 51000  = AltitudeRegionValues 47000 270.65  0             110.91    0.00143
   | alt <= 71000  = AltitudeRegionValues 51000 270.65  (-0.0028)     66.94     0.00086
   | alt <= 86000  = AltitudeRegionValues 71000 214.65  0.002         3.96      0.000064
-  | otherwise     = error "Altitude out of range, too high (>86km)" 
-  
+  | otherwise     = error "Altitude out of range, too high (>86km)"
+
 altToPressure :: Altitude -> PressureDensity
 altToPressure a@(Altitude alt) =
   let (AltitudeRegionValues hb' tb' lb' pb' rho') = altToValues a
@@ -163,7 +163,7 @@ main = do
 
 sim :: SimVals -> PosVel -> Bvars -> Wind -> Breturn
 sim sv
-    (PosVel lat' lon' alt'@(Altitude alt'') vel_x' vel_y' vel_z') 
+    (PosVel lat' lon' alt'@(Altitude alt'') vel_x' vel_y' vel_z')
     (Bvars mass' bal_cd' par_cd' packages_cd' launch_time' burst_vol' b_volume' b_press')
     (Wind wind_x' wind_y')
   -- if the burst volume has been reached print the values
@@ -182,18 +182,18 @@ sim sv
   where
     -- Getting pressure and density at current altitude
     PressureDensity pres dens = altToPressure alt'
-    
+
     -- Calculating volume, radius, and crossectional area
     -- TODO: Make Bvars hold the boxed variants of these rather than boxing
     -- them here!
     nVol = newVolume b_press' b_volume' pres
     Meter nbRad = spRadFromVol nVol
     nCAsph  = cAreaSp nbRad
-    
+
     -- Calculate drag force for winds
     f_drag_x = drag dens vel_x' wind_x' bal_cd' nCAsph
     f_drag_y = drag dens vel_y' wind_y' bal_cd' nCAsph
-    
+
     -- Calculate Kenimatics
     accel_x = accel f_drag_x mass'
     accel_y = accel f_drag_y mass'
@@ -202,7 +202,7 @@ sim sv
     Altitude disp_x = displacement (Altitude 0.0) nvel_x accel_x sv
     Altitude disp_y = displacement (Altitude 0.0) nvel_y accel_y sv
     nAlt = displacement alt' vel_z' 0.0 sv
-    
+
     -- Calculate change in corrdinates
     -- Because of the relatively small changes, we assume a spherical earth
     drlat = (disp_y / (er + alt''))
@@ -211,10 +211,10 @@ sim sv
     dlon = drlon*(180/pi)
     nlat = lat' + dlat
     nlon = lon' + dlon
-    
+
 simDescent :: SimVals -> PosVel -> Bvars -> Wind -> Breturn
 simDescent sv
-    (PosVel lat' lon' alt'@(Altitude alt'') vel_x' vel_y' vel_z') 
+    (PosVel lat' lon' alt'@(Altitude alt'') vel_x' vel_y' vel_z')
     (Bvars mass' bal_cd' par_cd' packages_cd' launch_time' burst_vol' b_volume' b_press')
     (Wind wind_x' wind_y')
   | alt' < 0 =
@@ -231,16 +231,16 @@ simDescent sv
   where
     -- Getting pressure and density at current altitude
     PressureDensity pres dens = altToPressure alt'
-    
+
     -- Calculate drag force for winds and parachute
     f_drag_x = drag dens vel_x' wind_x' packages_cd'  1
     f_drag_y = drag dens vel_y' wind_y' packages_cd'  1
     f_drag_z = drag dens vel_z' 0       par_cd'       1
-    
+
     -- fore of gravity and net forces in z
     f_g = mass' * g
     f_net_z = f_drag_z - f_g
-    
+
     -- Calculate Kenimatics
     accel_x = accel f_drag_x mass'
     accel_y = accel f_drag_y mass'
@@ -251,7 +251,7 @@ simDescent sv
     Altitude disp_x = displacement (Altitude 0.0) nvel_x accel_x sv
     Altitude disp_y = displacement (Altitude 0.0) nvel_y accel_y sv
     nAlt = displacement alt' vel_z' 0.0 sv
-    
+
     -- Calculate change in corrdinates
     -- Because of the relatively small changes, we assume a spherical earth
     drlat = (disp_y / (er + alt''))
@@ -260,15 +260,10 @@ simDescent sv
     dlon = drlon*(180/pi)
     nlat = lat' + dlat
     nlon = lon' + dlon
-    
-    
 
 
-  
+
+
+
   -- find the density and pressurefrom altitude
-  --f_drag_x = drag den 
-            
-
-
-
-
+  --f_drag_x = drag den
