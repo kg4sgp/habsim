@@ -24,7 +24,7 @@ newtype WindMs = WindMs Double deriving (DoubleGND)
 newtype CoeffDrag = CoeffDrag Double deriving (DoubleGND)
 newtype Velocity = Velocity Double deriving (DoubleGND)
 newtype CrossSecArea = CrossSecArea Double deriving (DoubleGND)
-newtype DragForce = DragForce Double deriving (DoubleGND)
+newtype Force = Force Double deriving (DoubleGND)
 newtype Acceleration = Acceleration Double deriving (DoubleGND)
 newtype Mass = Mass Double deriving (DoubleGND)
 newtype Displacement = Displacement Double deriving (DoubleGND)
@@ -87,11 +87,13 @@ data Wind =
 data Breturn = Breturn SimVals PosVel Bvars Wind  deriving (Eq, Ord, Show)
 
 -- | constants
-m, r, g, er :: Double
+m, r, er :: Double
 m   = 0.0289644
 r   = 8.3144598
-g   = 9.80665
 er  = 6378137.0
+
+g :: Acceleration
+g   = 9.80665
 
 -- | Calculate new volume given an initial pressure and volume, and a new
 -- pressure
@@ -111,17 +113,20 @@ gas_dens :: Double -> Double -> Double -> Double
 gas_dens mm p t = (mm*p)/(r*t)
 
 -- | Calculate boyancy.
-boyancy :: Double -> Double -> Double -> Double
+boyancy :: Double -> Double -> Acceleration -> Double
 boyancy p_air p_gas v = (p_air-p_gas)*g*v
 
 -- Calculate drag.
-drag :: Density -> Velocity -> WindMs -> CoeffDrag -> CrossSecArea -> DragForce
+drag :: Density -> Velocity -> WindMs -> CoeffDrag -> CrossSecArea -> Force
 drag (Density d) (Velocity v) (WindMs w) (CoeffDrag c) (CrossSecArea a) =
-  DragForce $ (1 / 2) * d * ((v - w) ** 2) * c * a
+  Force $ (1 / 2) * d * ((v - w) ** 2) * c * a
 
 -- Calculate acceleration.
-accel :: DragForce -> Mass -> Acceleration
-accel (DragForce f) (Mass m) = Acceleration $ f / m
+accel :: Force -> Mass -> Acceleration
+accel (Force f) (Mass m) = Acceleration $ f / m
+
+force :: Mass -> Acceleration -> Force
+force (Mass m) (Acceleration a) = Force $ m * a
 
 -- Calculate velocity.
 velo :: Velocity -> Acceleration -> SimVals -> Velocity
@@ -243,7 +248,7 @@ simDescent sv
     f_drag_z = drag dens vel_z' 0       par_cd'       1
 
     -- fore of gravity and net forces in z
-    f_g = mass' * g
+    f_g = force mass' g
     f_net_z = f_drag_z - f_g
 
     -- Calculate Kenimatics
