@@ -2,6 +2,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 module Data.HABSim.HABSim where
 
+import Control.Monad (when)
 import Control.Monad.Writer
 import qualified Data.DList as D
 
@@ -83,7 +84,7 @@ data Wind =
        , velo_y         :: WindMs
        } deriving (Eq, Ord, Show)
 
-data Breturn = Breturn SimVals PosVel Bvars Wind  deriving (Eq, Ord, Show)
+data Breturn = Breturn SimVals PosVel Bvars Wind deriving (Eq, Ord, Show)
 
 data Pitch = Ascent | Descent
 
@@ -183,7 +184,8 @@ sim pitch
         pv = PosVel nlat nlon nAlt nvel_x nvel_y (foldPitch pitch vel_z' nvel_z)
         bv = Bvars mass' bal_cd' par_cd' packages_cd' launch_time' burst_vol' (foldPitch pitch nVol b_volume') (foldPitch pitch pres b_press')
         w = Wind wind_x' wind_y'
-    tell (D.singleton $ Breturn sv pv bv w)
+    when (round (t sv) `mod` 100 == (0 :: Integer)) $
+      tell (D.singleton $ Breturn sv pv bv w)
     sim pitch sv' pv bv w
   where
     -- The guard to use depends on the pitch
