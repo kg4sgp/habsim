@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
+    <meta charset="utf-8">
+    <title>HABSim Demo</title>
+    <style>
+      #map { height: 100%; }
+      html, body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+      }
+    </style>
+    <script src="flight_path.js"></script>
+  </head>
+  <body>
+    <div id="map"></div>
+    <script>
+      function initMap() {
+        var map = new google.maps.Map(document.getElementById('map'), {
+          zoom: 9,
+          center: {lat: 41.10, lng: -80.64},
+          mapTypeId: 'terrain'
+        });
+
+        var flightPath = new google.maps.Polyline({
+          path: flight_path,
+          geodesic: false,
+          strokeColor: '#FF0000',
+          strokeOpacity: 1.0,
+          strokeWeight: 2
+        });
+
+        flightPath.setMap(map);
+      }
+    </script>
+    <script async defer
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBExjRkrwviJVH9Lt9ZMHPq7CAH6gdI9gQ&callback=initMap">
+    </script>
+  </body>
+</html>
