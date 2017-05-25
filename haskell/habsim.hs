@@ -25,7 +25,7 @@ newtype CoeffDrag = CoeffDrag Double deriving (DoubleGND)
 newtype Velocity = Velocity Double deriving (DoubleGND)
 newtype CrossSecArea = CrossSecArea Double deriving (DoubleGND)
 newtype Force = Force Double deriving (DoubleGND)
-newtype Acceleration = Acceleration Double deriving (DoubleGND)
+newtype Acceleration = Acceleration {acceleration :: Double} deriving (DoubleGND)
 newtype Mass = Mass Double deriving (DoubleGND)
 newtype Displacement = Displacement Double deriving (DoubleGND)
 
@@ -113,8 +113,8 @@ gas_dens :: Double -> Double -> Double -> Double
 gas_dens mm p t = (mm*p)/(r*t)
 
 -- | Calculate boyancy.
-boyancy :: Double -> Double -> Acceleration -> Double
-boyancy p_air p_gas v = (p_air-p_gas)*g*v
+boyancy :: Double -> Double -> Double -> Double
+boyancy p_air p_gas v = (p_air-p_gas)*(acceleration g)*v
 
 -- Calculate drag.
 drag :: Density -> Velocity -> WindMs -> CoeffDrag -> CrossSecArea -> Force
@@ -154,12 +154,12 @@ altToPressure :: Altitude -> PressureDensity
 altToPressure a@(Altitude alt) =
   let (AltitudeRegionValues hb' tb' lb' pb' rho') = altToValues a
       pr = if lb' == 0
-           then pb' * exp (((-g) * m * (alt - hb')) / (r * tb'))
-           else pb' * ((tb' / (tb' + lb' * (alt - hb')))**((g * m) / (r * lb')))
+           then pb' * exp (((- (acceleration g)) * m * (alt - hb')) / (r * tb'))
+           else pb' * ((tb' / (tb' + lb' * (alt - hb')))**(((acceleration g) * m) / (r * lb')))
       dn = if lb' == 0
-           then rho' * exp (((-g) * m * (alt - hb')) / (r * tb'))
+           then rho' * exp (((- (acceleration g)) * m * (alt - hb')) / (r * tb'))
            else rho' *
-                ((tb' / (tb' + lb' * (alt - hb')))**(1 + ((g * m) / (r * lb'))))
+                ((tb' / (tb' + lb' * (alt - hb')))**(1 + (((acceleration g) * m) / (r * lb'))))
   in PressureDensity (Pressure pr) (Density dn)
 
 main :: IO ()
