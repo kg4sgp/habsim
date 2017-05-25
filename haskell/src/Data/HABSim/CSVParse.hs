@@ -1,6 +1,6 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings #-}
-module Main where
+module Data.HABSim.CSVParse where
 
 import Control.Monad (mzero, when)
 import Data.Char (isDigit)

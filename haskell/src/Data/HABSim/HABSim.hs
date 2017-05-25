@@ -1,10 +1,9 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-module Main where
+module Data.HABSim.HABSim where
 
 import Control.Monad.Writer
 import qualified Data.DList as D
-import Data.Foldable (traverse_)
 
 #define DoubleGND Enum, Eq, Floating, Fractional, Num, Ord, Read, Real, \
   RealFloat, RealFrac, Show
@@ -167,19 +166,6 @@ altToPressure a@(Altitude alt) =
            else rho' *
                 ((tb' / (tb' + lb' * (alt - hb')))**(1 + (((acceleration g) * m) / (r * lb'))))
   in PressureDensity (Pressure pr) (Density dn)
-
-main :: IO ()
-main = do
-  let sv = SimVals 0.01 0.0
-      pv = PosVel 0.0 0.0 0.0 0.0 0.0 3.0
-      bv = Bvars 2.0 0.47 1.0 0.5 0.0 540.0 (Liter 5.0) 120000.0
-      w = Wind 4.0 4.0
-      (lastAscent@(Breturn sv' pv' bv' w'), accAscent) =
-        runWriter $ sim Ascent sv pv bv w
-      (lastDescent, accDescent) =
-        runWriter $ sim Descent sv' pv' bv' w'
-  traverse_ print (D.cons lastAscent accAscent)
-  traverse_ print (D.cons lastDescent accDescent)
 
 sim :: Pitch -> SimVals -> PosVel -> Bvars -> Wind -> Writer (D.DList Breturn) Breturn
 sim pitch
