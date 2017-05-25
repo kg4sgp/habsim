@@ -14,7 +14,7 @@ jsonLatLon (Breturn _ (PosVel lat lon _ _ _ _) _ _) =
 main :: IO ()
 main = do
   let sv = SimVals 0.1 0.0
-      pv = PosVel 0.0 0.0 0.0 0.0 0.0 3.0
+      pv = PosVel 41.1063 (-80.6477) (Altitude 300) 0.0 0.0 3.0
       bv = Bvars 2.0 0.47 1.0 0.5 0.0 540.0 (Liter 5.0) 120000.0
       w = Wind 4.0 4.0
       (lastAscent@(Breturn sv' pv' bv' w'), accAscent) =
