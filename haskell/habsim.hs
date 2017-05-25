@@ -86,6 +86,12 @@ data Wind =
 
 data Breturn = Breturn SimVals PosVel Bvars Wind  deriving (Eq, Ord, Show)
 
+data Pitch = Ascent | Descent
+
+foldPitch :: Pitch -> a -> a -> a
+foldPitch Ascent a _ = a
+foldPitch Descent _ b = b
+
 -- | constants
 m, r, er :: Double
 m   = 0.0289644
@@ -168,88 +174,54 @@ main = do
       pv = PosVel 0.0 0.0 0.0 0.0 0.0 3.0
       bv = Bvars 2.0 0.47 1.0 0.5 0.0 540.0 (Liter 5.0) 120000.0
       w = Wind 4.0 4.0
-  traverse_ print . snd . runWriter $ sim sv pv bv w
+  traverse_ print . snd . runWriter $ sim Ascent sv pv bv w
 
-sim :: SimVals -> PosVel -> Bvars -> Wind -> Writer (D.DList Breturn) Breturn
-sim sv
+sim :: Pitch -> SimVals -> PosVel -> Bvars -> Wind -> Writer (D.DList Breturn) Breturn
+sim pitch
+    sv
     (PosVel lat' lon' alt'@(Altitude alt'') vel_x' vel_y' vel_z')
     (Bvars mass' bal_cd' par_cd' packages_cd' launch_time' burst_vol' b_volume' b_press')
     (Wind wind_x' wind_y')
-  -- if the burst volume has been reached print the values
-  -- otherwise tail recurse with the new updated values
-  | b_volume' >= burst_vol' = do
+  | baseGuard pitch = do
     let pv = PosVel lat' lon' alt' vel_x' vel_y' vel_z'
         bv = Bvars mass' bal_cd' par_cd' packages_cd' launch_time' burst_vol' b_volume' b_press'
         w = Wind wind_x' wind_y'
     return (Breturn sv pv bv w)
   | otherwise = do
     let sv' = sv { t = t sv + t_inc sv }
-        pv = PosVel nlat nlon nAlt nvel_x nvel_y vel_z'
-        bv = Bvars mass' bal_cd' par_cd' packages_cd' launch_time' burst_vol' nVol pres
+        pv = PosVel nlat nlon nAlt nvel_x nvel_y (foldPitch pitch vel_z' nvel_z)
+        bv = Bvars mass' bal_cd' par_cd' packages_cd' launch_time' burst_vol' (foldPitch pitch nVol b_volume') (foldPitch pitch pres b_press')
         w = Wind wind_x' wind_y'
     tell (D.singleton $ Breturn sv pv bv w)
-    sim sv' pv bv w
+    sim pitch sv' pv bv w
   where
+    -- The guard to use depends on the pitch
+    baseGuard Ascent = b_volume' >= burst_vol'
+    baseGuard Descent = alt' < 0
+
     -- Getting pressure and density at current altitude
     PressureDensity pres dens = altToPressure alt'
 
     -- Calculating volume, radius, and crossectional area
-    -- TODO: Make Bvars hold the boxed variants of these rather than boxing
-    -- them here!
     nVol = newVolume b_press' b_volume' pres
     Meter nbRad = spRadFromVol nVol
     nCAsph  = cAreaSp nbRad
 
     -- Calculate drag force for winds
-    f_drag_x = drag dens vel_x' wind_x' bal_cd' nCAsph
-    f_drag_y = drag dens vel_y' wind_y' bal_cd' nCAsph
+    f_drag_x =
+      case pitch of
+        Ascent -> drag dens vel_x' wind_x' bal_cd' nCAsph
+        Descent -> drag dens vel_x' wind_x' packages_cd' 1
+    f_drag_y =
+      case pitch of
+        Ascent -> drag dens vel_y' wind_y' bal_cd' nCAsph
+        Descent -> drag dens vel_y' wind_y' packages_cd' 1
+    -- Only used for descent
+    f_drag_z = drag dens vel_z' 0 par_cd' 1
 
-    -- Calculate Kenimatics
-    accel_x = accel f_drag_x mass'
-    accel_y = accel f_drag_y mass'
-    nvel_x = velo vel_x' accel_x sv
-    nvel_y = velo vel_y' accel_y sv
-    Altitude disp_x = displacement (Altitude 0.0) nvel_x accel_x sv
-    Altitude disp_y = displacement (Altitude 0.0) nvel_y accel_y sv
-    nAlt = displacement alt' vel_z' 0.0 sv
+    -- Net forces in z
+    f_net_z = f_drag_z - (force mass' g)
 
-    -- Calculate change in corrdinates
-    -- Because of the relatively small changes, we assume a spherical earth
-    drlat = (disp_y / (er + alt''))
-    drlon = (disp_x / (er + alt''))
-    dlat = drlat*(180/pi)
-    dlon = drlon*(180/pi)
-    nlat = lat' + dlat
-    nlon = lon' + dlon
-
-simDescent :: SimVals -> PosVel -> Bvars -> Wind -> Breturn
-simDescent sv
-    (PosVel lat' lon' alt'@(Altitude alt'') vel_x' vel_y' vel_z')
-    (Bvars mass' bal_cd' par_cd' packages_cd' launch_time' burst_vol' b_volume' b_press')
-    (Wind wind_x' wind_y')
-  | alt' < 0 =
-    let pv = PosVel lat' lon' alt' vel_x' vel_y' vel_z'
-        bv = Bvars mass' bal_cd' par_cd' packages_cd' launch_time' burst_vol' b_volume' b_press'
-        w = Wind wind_x' wind_y'
-    in Breturn sv pv bv w
-  | otherwise =
-    let sv' = sv { t = t sv + t_inc sv }
-        pv = PosVel nlat nlon nAlt nvel_x nvel_y nvel_z
-        bv = Bvars mass' bal_cd' par_cd' packages_cd' launch_time' burst_vol' b_volume' b_press'
-        w = Wind wind_x' wind_y'
-    in simDescent sv' pv bv w
-  where
-    -- Getting pressure and density at current altitude
-    PressureDensity pres dens = altToPressure alt'
-
-    -- Calculate drag force for winds and parachute
-    f_drag_x = drag dens vel_x' wind_x' packages_cd'  1
-    f_drag_y = drag dens vel_y' wind_y' packages_cd'  1
-    f_drag_z = drag dens vel_z' 0       par_cd'       1
-
-    -- fore of gravity and net forces in z
-    f_g = force mass' g
-    f_net_z = f_drag_z - f_g
 
     -- Calculate Kenimatics
     accel_x = accel f_drag_x mass'
@@ -270,10 +242,3 @@ simDescent sv
     dlon = drlon*(180/pi)
     nlat = lat' + dlat
     nlon = lon' + dlon
-
-
-
-
-
-  -- find the density and pressurefrom altitude
-  --f_drag_x = drag den
