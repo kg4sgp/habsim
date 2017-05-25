@@ -2,14 +2,13 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Data.HABSim.CSVParse where
 
-import Control.Monad (mzero, when)
+import Control.Monad (mzero)
 import Data.Char (isDigit)
 import Data.Csv
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as BL
 import Data.Time
 import qualified Data.Vector as V
-import System.Environment
 
 data Direction = UGRD | VGRD deriving (Eq, Show)
 
@@ -58,13 +57,13 @@ filterGrib
   -> Double -- ^ Longitude
   -> Int -- ^ Pressure
   -> V.Vector GribLine -- ^ Input lines
-  -> V.Vector GribLine -- ^ Output lines
+  -> Maybe GribLine -- ^ Output line
 filterGrib lat lon pressure' gribLines =
   let lat' = fromIntegral (round (lat * 4) :: Integer) / 4
       lon' = fromIntegral (round (lon * 4) :: Integer) / 4
   in V.filter (\x -> latitude x == lat' &&
                    longitude x == lon' &&
-                   pressure x == pressure') gribLines
+                   pressure x == pressure') gribLines V.!? 0
 
 {-
 main :: IO ()
