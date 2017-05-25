@@ -174,7 +174,12 @@ main = do
       pv = PosVel 0.0 0.0 0.0 0.0 0.0 3.0
       bv = Bvars 2.0 0.47 1.0 0.5 0.0 540.0 (Liter 5.0) 120000.0
       w = Wind 4.0 4.0
-  traverse_ print . snd . runWriter $ sim Ascent sv pv bv w
+      (lastAscent@(Breturn sv' pv' bv' w'), accAscent) =
+        runWriter $ sim Ascent sv pv bv w
+      (lastDescent, accDescent) =
+        runWriter $ sim Descent sv' pv' bv' w'
+  traverse_ print (D.cons lastAscent accAscent)
+  traverse_ print (D.cons lastDescent accDescent)
 
 sim :: Pitch -> SimVals -> PosVel -> Bvars -> Wind -> Writer (D.DList Breturn) Breturn
 sim pitch
