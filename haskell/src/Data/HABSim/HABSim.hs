@@ -229,9 +229,13 @@ sim pitch
 
     -- Calculate change in corrdinates
     -- Because of the relatively small changes, we assume a spherical earth
-    drlat = (disp_y / (er + alt''))
-    drlon = (disp_x / (er + alt''))
-    dlat = drlat*(180/pi)
-    dlon = drlon*(180/pi)
-    nlat = lat' + dlat
-    nlon = lon' + dlon
+    bearing = atan2 y x
+    t_disp = (disp_x**2 + disp_y**2)**(1/2)
+    ang_dist = t_disp / er
+    
+    latr = lat'(pi/180)
+    lonr = lon'(pi/180)
+    nlatr = asin( sin(latr)*cos(ang_dist) + cos(latr)*sin(ang_dist)*cos(bearing) )
+    nlonr = lonr + atan2 ( sin(bearing)*sin(ang_dist)*cos(latr) ) ( cos(ang_dist) - (sin(latr)*sin(nlatr)) )
+    nlat = nlatr * (180/pi)
+    nlon = nlonr * (180/pi)
