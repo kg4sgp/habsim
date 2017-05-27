@@ -41,10 +41,12 @@ instance FromField Direction where
   parseField "UGRD" = pure UGRD
   parseField "VGRD" = pure VGRD
   parseField _      = mzero
+  {-# INLINE parseField #-}
 
 instance FromField GribTime where
   parseField t =
     maybe mzero pure (parseTimeM True defaultTimeLocale "%F %T" (B.unpack t))
+  {-# INLINE parseField #-}
 
 instance FromRecord GribLine where
   parseRecord v
@@ -67,6 +69,7 @@ instance FromRecord GribLine where
 
 decodeGrib :: BL.ByteString -> Either String (V.Vector GribLine)
 decodeGrib = decode NoHeader
+{-# INLINE decodeGrib #-}
 
 filterGrib
   :: Double -- ^ Latitude
