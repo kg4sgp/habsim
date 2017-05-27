@@ -15,14 +15,26 @@ data Direction = UGRD | VGRD deriving (Eq, Show)
 newtype GribTime = GribTime UTCTime
   deriving (Eq, Ord, Read, Show, ParseTime, FormatTime)
 
-data GribLine =
-  GribLine { referenceTime :: GribTime
-           , forecastTime  :: GribTime
-           , direction     :: Direction
-           , pressure      :: Int
-           , latitude      :: Double
-           , longitude     :: Double
-           , velocity      :: Double
+data RawGribLine =
+  RawGribLine { referenceTime :: GribTime
+              , forecastTime  :: GribTime
+              , direction     :: Direction
+              , pressure      :: Int
+              , latitude      :: Double
+              , longitude     :: Double
+              , velocity      :: Double
+              } deriving (Eq, Show)
+
+newtype UGRDLine = UGRDLine RawGribLine deriving (Eq, Show)
+newtype VGRDLine = VGRDLine RawGribLine deriving (Eq, Show)
+
+data GribLine = UGRDGribLine UGRDLine
+              | VGRDGribLine VGRDLine
+  deriving (Eq, Show)
+
+data GribPair =
+  GribPair { uGrd :: UGRDLine
+           , vGrd :: VGRDLine
            } deriving (Eq, Show)
 
 instance FromField Direction where
@@ -37,14 +49,18 @@ instance FromField GribTime where
 instance FromRecord GribLine where
   parseRecord v
     | V.length v == 7 =
-      GribLine <$>
-      v .! 0 <*>
-      v .! 1 <*>
-      v .! 2 <*>
-      (mbToInt <$> v .! 3) <*>
-      v .! 4 <*>
-      v .! 5 <*>
-      v .! 6
+      do
+        refTime <- v .! 0
+        foreTime <- v .! 1
+        dir <- v .! 2
+        press <- mbToInt <$> v .! 3
+        lat <- v .! 4
+        lon <- v .! 5
+        vel <- v .! 6
+        let rawLine = RawGribLine refTime foreTime dir press lat lon vel
+        return $ case dir of
+                   UGRD -> UGRDGribLine (UGRDLine rawLine)
+                   VGRD -> VGRDGribLine (VGRDLine rawLine)
     | otherwise = mzero
     where
       mbToInt s = read (takeWhile isDigit s)
@@ -57,13 +73,30 @@ filterGrib
   -> Double -- ^ Longitude
   -> Int -- ^ Pressure
   -> V.Vector GribLine -- ^ Input lines
-  -> Maybe GribLine -- ^ Output line
-filterGrib lat lon pressure' gribLines =
+  -> Maybe GribPair -- ^ Output lines (both UGRD and VGRD)
+filterGrib lat lon pressure' gribLines = do
   let lat' = fromIntegral (round (lat * 4) :: Integer) / 4
       lon' = fromIntegral (round (lon * 4) :: Integer) / 4
-  in V.filter (\x -> latitude x == lat' &&
-                   longitude x == lon' &&
-                   pressure x == pressure') gribLines V.!? 0
+      filteredLines =
+        V.filter (\x -> let raw = gribLineToRaw x
+                        in latitude raw == lat' &&
+                           longitude raw == lon' &&
+                           pressure raw == pressure') gribLines
+  first <- filteredLines V.!? 0
+  second <- filteredLines V.!? 1
+  case first of
+    UGRDGribLine u ->
+      case second of
+        VGRDGribLine v -> return (GribPair u v)
+        _ -> mzero
+    VGRDGribLine v ->
+      case second of
+        UGRDGribLine u -> return (GribPair u v)
+        _ -> mzero
+  where
+    gribLineToRaw (UGRDGribLine (UGRDLine l)) = l
+    gribLineToRaw (VGRDGribLine (VGRDLine l)) = l
+
 
 {-
 main :: IO ()
