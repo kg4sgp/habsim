@@ -24,7 +24,7 @@ newtype GribTime = GribTime UTCTime
 -- | This is a (mostly-)raw gribline, right after being parsed.
 --
 -- The "mostly-" comes from the fact that we wrap a few things (e.g. the times
--- into 'GribTime' and convert 'pressure' into an 'Int'.
+-- into 'GribTime') and convert 'pressure' into an 'Int'.
 data RawGribLine =
   RawGribLine { referenceTime :: GribTime
               , forecastTime  :: GribTime
