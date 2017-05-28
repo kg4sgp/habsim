@@ -10,11 +10,21 @@ import qualified Data.ByteString.Lazy.Char8 as BL
 import Data.Time
 import qualified Data.Vector as V
 
+-- | The wind direction
+--
+-- 'UGRD' is North\/South, 'VGRD' is East\/West.
 data Direction = UGRD | VGRD deriving (Eq, Show)
 
+-- | This is used for both the 'referenceTime' and the 'forecastTime'. The
+-- reason it exists is solely so we can create a 'FromField' instance on
+-- 'UTCTime' while avoiding orphan instances.
 newtype GribTime = GribTime UTCTime
   deriving (Eq, Ord, Read, Show, ParseTime, FormatTime)
 
+-- | This is a (mostly-)raw gribline, right after being parsed.
+--
+-- The "mostly-" comes from the fact that we wrap a few things (e.g. the times
+-- into 'GribTime' and convert 'pressure' into an 'Int'.
 data RawGribLine =
   RawGribLine { referenceTime :: GribTime
               , forecastTime  :: GribTime
@@ -25,13 +35,23 @@ data RawGribLine =
               , velocity      :: Double
               } deriving (Eq, Show)
 
+-- | A single 'UGRD' line.
 newtype UGRDLine = UGRDLine RawGribLine deriving (Eq, Show)
+
+-- | A single 'VGRD' line.
 newtype VGRDLine = VGRDLine RawGribLine deriving (Eq, Show)
 
+-- | Either a 'UGRDLine' or a 'VGRDLine'. This is so we can parse and ultimately
+-- return a 'V.Vector' containing both 'UGRD' and 'VGRD' lines. We return a
+-- 'V.Vector' 'GribLine' (or rather, Cassava does) and we just know that a
+-- 'GribLine' will either be a 'UGRDLine' or a 'VGRDLine'.
 data GribLine = UGRDGribLine UGRDLine
               | VGRDGribLine VGRDLine
   deriving (Eq, Show)
 
+-- | A pair of Grib lines, where one is a 'UGRDLine' and one is a 'VGRDLine'.
+-- This is useful for filtering (see 'filterGrib' below) where we want to return
+-- one of each and ensure through type safety that we don't get them confused.
 data GribPair =
   GribPair { uGrd :: UGRDLine
            , vGrd :: VGRDLine
@@ -67,10 +87,17 @@ instance FromRecord GribLine where
     where
       mbToInt s = read (takeWhile isDigit s)
 
+-- | A helper function that primarily exists just to help type inference.
+--
+-- @decodeGrib = decode NoHeader@ (where 'decode' and 'NoHeader' both come from
+-- Cassava).
 decodeGrib :: BL.ByteString -> Either String (V.Vector GribLine)
 decodeGrib = decode NoHeader
 {-# INLINE decodeGrib #-}
 
+-- | Filter Grib lines from a 'V.Vector' 'GribLine'.
+-- If we for some reason don't have both 'UGRD' and 'VGRD' of our filter result,
+-- then we return 'Nothing'. Otherwise we return a 'GripPair' containing both.
 filterGrib
   :: Double -- ^ Latitude
   -> Double -- ^ Longitude
