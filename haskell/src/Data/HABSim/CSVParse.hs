@@ -97,7 +97,7 @@ decodeGrib = decode NoHeader
 
 -- | Filter Grib lines from a 'V.Vector' 'GribLine'.
 -- If we for some reason don't have both 'UGRD' and 'VGRD' of our filter result,
--- then we return 'Nothing'. Otherwise we return a 'GripPair' containing both.
+-- then we return 'Nothing'. Otherwise we return a 'GribPair' containing both.
 filterGrib
   :: Double -- ^ Latitude
   -> Double -- ^ Longitude
