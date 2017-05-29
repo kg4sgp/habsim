@@ -43,8 +43,9 @@ decodeGrib :: BL.ByteString -> Either String (V.Vector GribLine)
 decodeGrib = decode NoHeader
 {-# INLINE decodeGrib #-}
 
--- | Given any kind of 'GridLine' (either a 'UGRDGribLine' or a 'VGRDGribLine'),
--- pull the raw Grib line out of it.
+-- | Given any kind of 'GridLine' (usually either a 'UGRDGribLine' or a
+-- 'VGRDGribLine', but could also be an 'OtherGribLine'), pull the raw Grib line
+-- out of it.
 gribLineToRaw :: GribLine -> RawGribLine
 gribLineToRaw (UGRDGribLine (UGRDLine l)) = l
 gribLineToRaw (VGRDGribLine (VGRDLine l)) = l
