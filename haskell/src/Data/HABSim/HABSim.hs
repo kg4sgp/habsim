@@ -5,6 +5,8 @@ module Data.HABSim.HABSim where
 import Control.Monad (when)
 import Control.Monad.Writer
 import qualified Data.DList as D
+import Data.HABSim.Grib2.CSVParse
+import qualified Data.Vector as V
 
 #define DoubleGND Enum, Eq, Floating, Fractional, Num, Ord, Read, Real, \
   RealFloat, RealFrac, Show
@@ -168,25 +170,40 @@ altToPressure a@(Altitude alt) =
                 ((tb' / (tb' + lb' * (alt - hb')))**(1 + (((acceleration g) * m) / (r * lb'))))
   in PressureDensity (Pressure pr) (Density dn)
 
-sim :: Pitch -> SimVals -> PosVel -> Bvars -> Wind -> Writer (D.DList Breturn) Breturn
+roundToClosest :: (Ord a, Num a, Integral b) => a -> V.Vector b -> b
+roundToClosest n xs =
+  let differences = fmap (\x -> abs (n - fromIntegral x)) xs
+  in xs V.! V.minIndex differences
+
+sim
+  :: Pitch
+  -> SimVals
+  -> PosVel
+  -> Bvars
+  -> Wind
+  -> V.Vector Int -- ^ List of pressures to round to from Grib file
+  -> V.Vector GribLine
+  -> Writer (D.DList Breturn) Breturn
 sim pitch
     sv
-    (PosVel lat' lon' alt'@(Altitude alt'') vel_x' vel_y' vel_z')
+    (PosVel lat' lon' alt' vel_x' vel_y' vel_z')
     (Bvars mass' bal_cd' par_cd' packages_cd' launch_time' burst_vol' b_volume' b_press')
     (Wind wind_x' wind_y')
+    pressureList
+    gribLines
   | baseGuard pitch = do
     let pv = PosVel lat' lon' alt' vel_x' vel_y' vel_z'
         bv = Bvars mass' bal_cd' par_cd' packages_cd' launch_time' burst_vol' b_volume' b_press'
-        w = Wind wind_x' wind_y'
+        w = Wind windX windY
     return (Breturn sv pv bv w)
   | otherwise = do
     let sv' = sv { t = t sv + t_inc sv }
         pv = PosVel nlat nlon nAlt nvel_x nvel_y (foldPitch pitch vel_z' nvel_z)
         bv = Bvars mass' bal_cd' par_cd' packages_cd' launch_time' burst_vol' (foldPitch pitch nVol b_volume') (foldPitch pitch pres b_press')
-        w = Wind wind_x' wind_y'
+        w = Wind windX windY
     when (round (t sv) `mod` 100 == (0 :: Integer)) $
       tell (D.singleton $ Breturn sv pv bv w)
-    sim pitch sv' pv bv w
+    sim pitch sv' pv bv w pressureList gribLines
   where
     -- The guard to use depends on the pitch
     baseGuard Ascent = b_volume' >= burst_vol'
@@ -243,3 +260,9 @@ sim pitch
             (cos ang_dist - (sin latr * sin nlatr))
     nlat = nlatr * (180 / pi)
     nlon = nlonr * (180 / pi)
+
+    (windX, windY) =
+      case filterGrib lat' lon' (roundToClosest pres pressureList) gribLines of
+        Just (GribPair (UGRDLine u) (VGRDLine v)) ->
+          (WindMs (velocity u), WindMs (velocity v))
+        Nothing -> (wind_x', wind_y')

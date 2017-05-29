@@ -25,6 +25,7 @@
 module Data.HABSim.Grib2.CSVParse
   ( module Data.HABSim.Grib2.CSVParse.Types
   , decodeGrib
+  , gribLineToRaw
   , filterGrib
   ) where
 
@@ -41,6 +42,12 @@ import qualified Data.Vector as V
 decodeGrib :: BL.ByteString -> Either String (V.Vector GribLine)
 decodeGrib = decode NoHeader
 {-# INLINE decodeGrib #-}
+
+-- | Given any kind of 'GridLine' (either a 'UGRDGribLine' or a 'VGRDGribLine'),
+-- pull the raw Grib line out of it.
+gribLineToRaw :: GribLine -> RawGribLine
+gribLineToRaw (UGRDGribLine (UGRDLine l)) = l
+gribLineToRaw (VGRDGribLine (VGRDLine l)) = l
 
 -- | Filter Grib lines from a 'V.Vector' 'GribLine'.
 -- If we for some reason don't have both 'UGRD' and 'VGRD' of our filter result,
@@ -70,10 +77,6 @@ filterGrib lat lon pressure' gribLines = do
       case second of
         UGRDGribLine u -> return (GribPair u v)
         _ -> mzero
-  where
-    gribLineToRaw (UGRDGribLine (UGRDLine l)) = l
-    gribLineToRaw (VGRDGribLine (VGRDLine l)) = l
-
 
 {-
 main :: IO ()
