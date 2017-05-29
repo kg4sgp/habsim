@@ -13,7 +13,8 @@ build-type:          Simple
 cabal-version:       >= 1.10
 
 library
-  exposed-modules:     Data.HABSim.CSVParse
+  exposed-modules:     Data.HABSim.Grib2.CSVParse
+                     , Data.HABSim.Grib2.CSVParse.Types
                      , Data.HABSim.HABSim
   other-extensions:    CPP, GeneralizedNewtypeDeriving, OverloadedStrings
   build-depends:       base >= 4 && < 5
