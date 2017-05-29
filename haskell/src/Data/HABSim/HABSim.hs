@@ -170,6 +170,10 @@ altToPressure a@(Altitude alt) =
                 ((tb' / (tb' + lb' * (alt - hb')))**(1 + (((acceleration g) * m) / (r * lb'))))
   in PressureDensity (Pressure pr) (Density dn)
 
+-- | Given some number-like thing and a 'V.Vector' of other number-like things,
+-- round the number-like thing to the closest thing in the 'V.Vector'.
+--
+-- *NOTE*: The vector must NOT be empty.
 roundToClosest :: (Ord a, Num a, Integral b) => a -> V.Vector b -> b
 roundToClosest n xs =
   let differences = fmap (\x -> abs (n - fromIntegral x)) xs
