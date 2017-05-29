@@ -265,8 +265,9 @@ sim pitch
     nlat = nlatr * (180 / pi)
     nlon = nlonr * (180 / pi)
 
+    filterPressure = roundToClosest pres pressureList
     (windX, windY) =
-      case filterGrib lat' lon' (roundToClosest pres pressureList) gribLines of
+      case filterGrib lat' lon' filterPressure [UGRD, VGRD] gribLines of
         Just (GribPair (UGRDLine u) (VGRDLine v)) ->
           (WindMs (velocity u), WindMs (velocity v))
         Nothing -> (wind_x', wind_y')

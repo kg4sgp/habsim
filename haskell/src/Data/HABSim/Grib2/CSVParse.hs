@@ -33,6 +33,7 @@ import Control.Monad (mzero)
 import qualified Data.ByteString.Lazy.Char8 as BL
 import Data.Csv
 import Data.HABSim.Grib2.CSVParse.Types
+import Data.List (elem)
 import qualified Data.Vector as V
 
 -- | A helper function that primarily exists just to help type inference.
@@ -58,14 +59,16 @@ filterGrib
   :: Double -- ^ Latitude
   -> Double -- ^ Longitude
   -> Int -- ^ Pressure
+  -> [Direction] -- ^ The 'Direction' to filter for.
   -> V.Vector GribLine -- ^ Input lines
   -> Maybe GribPair -- ^ Output lines (both UGRD and VGRD)
-filterGrib lat lon pressure' gribLines = do
+filterGrib lat lon pressure' dirs gribLines = do
   let lat' = fromIntegral (round (lat * 4) :: Integer) / 4
       lon' = fromIntegral (round (lon * 4) :: Integer) / 4
       filteredLines =
         V.filter (\x -> let raw = gribLineToRaw x
-                        in latitude raw == lat' &&
+                        in direction raw `elem` dirs &&
+                           latitude raw == lat' &&
                            longitude raw == lon' &&
                            pressure raw == pressure') gribLines
   first <- filteredLines V.!? 0
