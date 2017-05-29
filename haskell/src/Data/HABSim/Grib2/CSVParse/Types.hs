@@ -15,6 +15,7 @@
 ----------------------------------------------------------------------------
 module Data.HABSim.Grib2.CSVParse.Types where
 
+import Control.Applicative
 import Control.Monad (mzero)
 import qualified Data.ByteString.Char8 as B
 import Data.Char (isDigit)
