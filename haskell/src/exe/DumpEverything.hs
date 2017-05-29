@@ -3,15 +3,14 @@ module Main where
 import Control.Monad.Writer
 import qualified Data.ByteString.Lazy.Char8 as BL
 import qualified Data.DList as D
+import Data.Foldable (traverse_)
 import Data.HABSim.HABSim hiding (pressure)
 import Data.HABSim.Grib2.CSVParse
 import Data.List (intercalate)
+import qualified Data.Set as S
+import qualified Data.Vector as V
 import System.Environment
-
--- {lat: -18.142, lng: 178.431}
-jsonLatLon :: Breturn -> String
-jsonLatLon (Breturn _ (PosVel lat' lon' _ _ _ _) _ _) =
-  "{lat: " ++ show lat' ++ ", lng: " ++ show lon' ++ "}"
+import Utility
 
 main :: IO ()
 main = do
@@ -22,14 +21,12 @@ main = do
       bv = Bvars 2.0 0.47 1.0 0.5 0.0 540.0 (Liter 5.0) 120000.0
       w = Wind 4.0 4.0
       gribLines = either error id (decodeGrib csv)
-      pressures = fmap (pressure . gribLineToRaw) gribLines
-      (lastAscent@(Breturn sv' pv' bv' w'), accAscent) =
+      pressures = nub (fmap (pressure . gribLineToRaw) gribLines)
+      (lastAscent, accAscent) =
         runWriter $ sim Ascent sv pv bv w pressures gribLines
       (lastDescent, accDescent) =
-        runWriter $ sim Descent sv' pv' bv' w' pressures gribLines
-      ascent = D.cons lastAscent accAscent
-      descent = D.cons lastDescent accDescent
-  putStrLn "var flight_path = ["
-  putStrLn . intercalate ",\n" . map jsonLatLon . D.toList $
-    ascent `D.append` descent
-  putStrLn "];"
+        runWriter $ sim Descent (retSV lastAscent) (retPV lastAscent) (retBV lastAscent) (retW lastAscent) pressures gribLines
+  traverse_ print accAscent
+  print lastAscent
+  traverse_ print accDescent
+  print lastDescent

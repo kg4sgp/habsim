@@ -86,7 +86,12 @@ data Wind =
        , velo_y         :: WindMs
        } deriving (Eq, Ord, Show)
 
-data Breturn = Breturn SimVals PosVel Bvars Wind deriving (Eq, Ord, Show)
+data Breturn =
+  Breturn { retSV :: SimVals
+          , retPV :: PosVel
+          , retBV :: Bvars
+          , retW  :: Wind
+          } deriving (Eq, Ord, Show)
 
 data Pitch = Ascent | Descent
 
@@ -185,7 +190,7 @@ sim
   -> PosVel
   -> Bvars
   -> Wind
-  -> V.Vector Int -- ^ List of pressures to round to from Grib file
+  -> V.Vector Int -- ^ Vector of pressures to round to from Grib file
   -> V.Vector GribLine
   -> Writer (D.DList Breturn) Breturn
 sim pitch
