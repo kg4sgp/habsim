@@ -224,12 +224,12 @@ sim pitch
     -- Calculate drag force for winds
     f_drag_x =
       case pitch of
-        Ascent -> drag dens vel_x' wind_x' bal_cd' nCAsph
-        Descent -> drag dens vel_x' wind_x' packages_cd' 1
+        Ascent -> drag dens vel_x' windX bal_cd' nCAsph
+        Descent -> drag dens vel_x' windX packages_cd' 1
     f_drag_y =
       case pitch of
-        Ascent -> drag dens vel_y' wind_y' bal_cd' nCAsph
-        Descent -> drag dens vel_y' wind_y' packages_cd' 1
+        Ascent -> drag dens vel_y' windY bal_cd' nCAsph
+        Descent -> drag dens vel_y' windY packages_cd' 1
     -- Only used for descent
     f_drag_z = drag dens vel_z' 0 par_cd' 1
 
