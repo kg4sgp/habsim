@@ -26,7 +26,10 @@ import qualified Data.Vector as V
 -- | The wind direction
 --
 -- 'UGRD' is North\/South, 'VGRD' is East\/West.
-data Direction = UGRD | VGRD deriving (Eq, Show)
+--
+-- If we're given something other than @UGRD@ or @VGRD@ in this field, we store
+-- the value in the 'Other' constructor.
+data Direction = UGRD | VGRD | Other String deriving (Eq, Show)
 
 -- | This is used for both the 'referenceTime' and the 'forecastTime'. The
 -- reason it exists is solely so we can create a 'FromField' instance on
@@ -58,8 +61,11 @@ newtype VGRDLine = VGRDLine RawGribLine deriving (Eq, Show)
 -- return a 'V.Vector' containing both 'UGRD' and 'VGRD' lines. We return a
 -- 'V.Vector' 'GribLine' (or rather, Cassava does) and we just know that a
 -- 'GribLine' will either be a 'UGRDLine' or a 'VGRDLine'.
+--
+-- If the line is anything else, we return the raw line in 'OtherGribLine'.
 data GribLine = UGRDGribLine UGRDLine
               | VGRDGribLine VGRDLine
+              | OtherGribLine RawGribLine
   deriving (Eq, Show)
 
 -- | A pair of Grib lines, where one is a 'UGRDLine' and one is a 'VGRDLine'.
@@ -73,7 +79,7 @@ data GribPair =
 instance FromField Direction where
   parseField (B.unpack -> "UGRD") = pure UGRD
   parseField (B.unpack -> "VGRD") = pure VGRD
-  parseField _      = mzero
+  parseField s = pure (Other (B.unpack s))
   {-# INLINE parseField #-}
 
 instance FromField GribTime where
@@ -96,6 +102,7 @@ instance FromRecord GribLine where
         return $ case dir of
                    UGRD -> UGRDGribLine (UGRDLine rawLine)
                    VGRD -> VGRDGribLine (VGRDLine rawLine)
+                   Other _ -> OtherGribLine rawLine
     | otherwise = mzero
     where
       mbToInt s = read (takeWhile isDigit s)

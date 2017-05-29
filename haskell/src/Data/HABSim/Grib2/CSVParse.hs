@@ -48,6 +48,7 @@ decodeGrib = decode NoHeader
 gribLineToRaw :: GribLine -> RawGribLine
 gribLineToRaw (UGRDGribLine (UGRDLine l)) = l
 gribLineToRaw (VGRDGribLine (VGRDLine l)) = l
+gribLineToRaw (OtherGribLine l) = l
 
 -- | Filter Grib lines from a 'V.Vector' 'GribLine'.
 -- If we for some reason don't have both 'UGRD' and 'VGRD' of our filter result,
@@ -77,6 +78,7 @@ filterGrib lat lon pressure' gribLines = do
       case second of
         UGRDGribLine u -> return (GribPair u v)
         _ -> mzero
+    _ -> mzero
 
 {-
 main :: IO ()
