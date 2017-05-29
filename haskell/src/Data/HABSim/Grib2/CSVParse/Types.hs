@@ -46,8 +46,8 @@ data RawGribLine =
               , forecastTime  :: GribTime
               , direction     :: Direction
               , pressure      :: Int
-              , latitude      :: Double
               , longitude     :: Double
+              , latitude      :: Double
               , velocity      :: Double
               } deriving (Eq, Show)
 
