@@ -14,10 +14,10 @@
 --
 -- @
 --   myCsv <- 'BL.readFile' "\/path\/to\/csv.csv"
---   case decodeGrib myCsv of
+--   case 'decodeGrib' myCsv of
 --     Left str -> error str
 --     Right gribLines ->
---       case filterGrib 38.8977 (-77.0365) 950 gribLines of
+--       case 'filterGrib' 38.8977 (-77.0365) 950 gribLines of
 --         Nothing -> error "No entry found"
 --         Just wh -> print wh
 -- @
