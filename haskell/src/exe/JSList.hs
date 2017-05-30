@@ -3,12 +3,9 @@ module Main where
 import Control.Monad.Writer
 import qualified Data.ByteString.Lazy.Char8 as BL
 import qualified Data.DList as D
-import Data.Foldable (traverse_)
 import Data.HABSim.HABSim hiding (pressure)
 import Data.HABSim.Grib2.CSVParse
 import Data.List (intercalate)
-import qualified Data.Set as S
-import qualified Data.Vector as V
 import System.Environment
 import Utility
 
@@ -31,8 +28,6 @@ main = do
         runWriter $ sim Ascent sv pv bv w pressures gribLines
       (lastDescent, accDescent) =
         runWriter $ sim Descent (retSV lastAscent) (retPV lastAscent) (retBV lastAscent) (retW lastAscent) pressures gribLines
-      ascent = D.cons lastAscent accAscent
-      descent = D.cons lastDescent accDescent
   putStrLn "var flight_path = ["
   putStr . intercalate ",\n" . map jsonLatLon . D.toList $ accAscent
   putStrLn ","
