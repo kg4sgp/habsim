@@ -10,6 +10,6 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 pushd $DIR/..
   cabal build
   echo "*** Running habsim-jsdump"
-  dist/build/habsim-jsdump/habsim-jsdump "$1" > $DIR/flight_path.js
+  time dist/build/habsim-jsdump/habsim-jsdump "$1" > $DIR/flight_path.js
   echo "Open $DIR/index.html in your browser."
 popd
