@@ -1,0 +1,18 @@
+sudo: false
+language: haskell
+ghc:
+  - 8.0
+  - 7.8
+  - 7.6
+before_script:
+  - curl -o /tmp/2017052818-big.csv.gz https://tmp.elrod.me/2017052818-big.csv.gz
+  - gunzip /tmp/2017052818-big.csv.gz
+script:
+  - cabal configure
+  - cabal build
+  # This ensures our debug program is still streaming output
+  - timeout 5 ./dist/build/habsim-debug/habsim-debug /tmp/2017052818-big.csv | head > /tmp/s || true
+  - [[ "$(stat --printf="%s" /tmp/s)" != "0" ]]
+  # And test that our HTML generation works
+  - ./html/generate.sh /tmp/2017052818-big.csv.gz
+  - [[ "$(wc -l html/flight_path.js)" > 5 ]]
