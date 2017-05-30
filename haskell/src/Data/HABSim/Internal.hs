@@ -46,12 +46,17 @@ force :: Mass -> Acceleration -> Force
 force (Mass m) (Acceleration a) = Force $ m * a
 
 -- Calculate velocity.
-velo :: Velocity -> Acceleration -> SimVals -> Velocity
-velo (Velocity v) (Acceleration a) (SimVals t _) = Velocity $ v + a * t
+velo :: Velocity -> Acceleration -> SimulationTime -> Velocity
+velo (Velocity v) (Acceleration a) (SimulationTime t _) = Velocity $ v + a * t
 
 -- Calculate displacement.
-displacement :: Altitude -> Velocity -> Acceleration -> SimVals -> Altitude {-Displacement-}
-displacement (Altitude x) (Velocity v) (Acceleration a) (SimVals t _) =
+displacement
+  :: Altitude
+  -> Velocity
+  -> Acceleration
+  -> SimulationTime
+  -> Altitude
+displacement (Altitude x) (Velocity v) (Acceleration a) (SimulationTime t _) =
   Altitude $ x + (v * t) + ((1 / 2) * a * t ** 2)
 
 altToValues :: Altitude -> AltitudeRegionValues

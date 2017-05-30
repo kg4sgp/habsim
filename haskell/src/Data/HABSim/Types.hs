@@ -50,10 +50,10 @@ data AltitudeRegionValues =
                        , rho :: !Double
                        } deriving (Eq, Ord, Show)
 
-data SimVals =
-  SimVals { t_inc     :: !Double
-          , t         :: !Double
-          } deriving (Eq, Ord, Show)
+data SimulationTime =
+  SimulationTime { increment :: !Double
+                 , simulationTime :: !Double
+                 } deriving (Eq, Ord, Show)
 
 data PosVel =
   PosVel {  lat       :: !Double
@@ -64,8 +64,8 @@ data PosVel =
           , vel_z     :: Velocity
           } deriving (Eq, Ord, Show)
 
-data Bvars =
-  Bvars { mass          :: Mass
+data Burst =
+  Burst { mass          :: Mass
         , bal_cd        :: CoeffDrag
         , par_cd        :: CoeffDrag
         , packages_cd   :: CoeffDrag
@@ -81,9 +81,9 @@ data Wind =
        } deriving (Eq, Ord, Show)
 
 data Simulation =
-  Simulation { retSV :: SimVals
+  Simulation { retSV :: SimulationTime
              , retPV :: PosVel
-             , retBV :: Bvars
+             , retBV :: Burst
              , retW  :: Wind
              } deriving (Eq, Ord, Show)
 
