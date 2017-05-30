@@ -13,33 +13,31 @@ import qualified Data.Vector as V
 
 sim
   :: Pitch
-  -> SimVals
-  -> PosVel
-  -> Bvars
-  -> Wind
+  -> Simulation
   -> V.Vector Int -- ^ Vector of pressures to round to from Grib file
   -> V.Vector GribLine
-  -> Writer (D.DList Breturn) Breturn
+  -> Writer (D.DList Simulation) Simulation
 sim p
-    sv
-    (PosVel lat' lon' alt' vel_x' vel_y' vel_z')
-    (Bvars mass' bal_cd' par_cd' packages_cd' launch_time' burst_vol' b_volume' b_press')
-    (Wind wind_x' wind_y')
+    (Simulation sv
+                (PosVel lat' lon' alt' vel_x' vel_y' vel_z')
+                (Bvars mass' bal_cd' par_cd' packages_cd' launch_time' burst_vol' b_volume' b_press')
+                (Wind wind_x' wind_y'))
     pressureList
     gribLines
   | baseGuard p = do
     let pv = PosVel lat' lon' alt' vel_x' vel_y' vel_z'
         bv = Bvars mass' bal_cd' par_cd' packages_cd' launch_time' burst_vol' b_volume' b_press'
         w = Wind windX windY
-    return (Breturn sv pv bv w)
+    return (Simulation sv pv bv w)
   | otherwise = do
     let sv' = sv { t = t sv + t_inc sv }
         pv = PosVel nlat nlon nAlt nvel_x nvel_y (pitch p vel_z' nvel_z)
         bv = Bvars mass' bal_cd' par_cd' packages_cd' launch_time' burst_vol' (pitch p nVol b_volume') (pitch p pres b_press')
         w = Wind windX windY
+        s = Simulation sv' pv bv w
     when (round (t sv) `mod` 100 == (0 :: Integer)) $
-      tell (D.singleton $ Breturn sv pv bv w)
-    sim p sv' pv bv w pressureList gribLines
+      tell (D.singleton s)
+    sim p s pressureList gribLines
   where
     -- The guard to use depends on the pitch
     baseGuard Ascent = b_volume' >= burst_vol'

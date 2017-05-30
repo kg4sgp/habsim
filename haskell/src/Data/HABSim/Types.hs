@@ -80,12 +80,12 @@ data Wind =
        , velo_y         :: WindMs
        } deriving (Eq, Ord, Show)
 
-data Breturn =
-  Breturn { retSV :: SimVals
-          , retPV :: PosVel
-          , retBV :: Bvars
-          , retW  :: Wind
-          } deriving (Eq, Ord, Show)
+data Simulation =
+  Simulation { retSV :: SimVals
+             , retPV :: PosVel
+             , retBV :: Bvars
+             , retW  :: Wind
+             } deriving (Eq, Ord, Show)
 
 data Pitch = Ascent | Descent deriving (Eq, Show)
 
