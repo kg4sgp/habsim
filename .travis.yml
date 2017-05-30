@@ -88,4 +88,13 @@ script:
 # - SRC_TGZ=$(cabal info . | awk '{print $2;exit}').tar.gz &&
 #   (cd dist && cabal install --force-reinstalls "$SRC_TGZ")
 
+
+notifications:
+  irc:
+    channels:
+      - "irc.freenode.org#noexc"
+    skip_join: false
+    template:
+      - "\x0313habsim\x0f/\x0306%{branch}\x0f \x0314%{commit}\x0f %{message} \x0302\x1f%{build_url}\x0f"
+
 # EOF
