@@ -16,38 +16,47 @@ g   = 9.80665
 -- pressure
 newVolume :: Pressure -> Volume -> Pressure -> Volume
 newVolume (Pressure p1) (Liter v) (Pressure p2) = Liter $ (p1 * v) / p2
+{-# INLINE newVolume #-}
 
 -- | Calculate sphereical radius from volume
 spRadFromVol :: Volume -> SphericalRadius
 spRadFromVol (Liter v) = Meter $ ((3 * v) / (4 * pi)) ** (1 / 3)
+{-# INLINE spRadFromVol #-}
 
 -- Calculate cross sectional area of sphere.
 cAreaSp :: Double -> CrossSecArea
 cAreaSp r = CrossSecArea $ pi * (r ** 2)
+{-# INLINE cAreaSp #-}
 
 -- Calculate gas density given molar mass, temp and pressure.
 gas_dens :: Double -> Double -> Double -> Double
 gas_dens mm p t = (mm*p)/(r*t)
+{-# INLINE gas_dens #-}
 
 -- | Calculate boyancy.
 boyancy :: Double -> Double -> Double -> Double
 boyancy p_air p_gas v = (p_air-p_gas)*(acceleration g)*v
+{-# INLINE boyancy #-}
 
 -- Calculate drag.
 drag :: Density -> Velocity -> WindMs -> CoeffDrag -> CrossSecArea -> Force
 drag (Density d) (Velocity v) (WindMs w) (CoeffDrag c) (CrossSecArea a) =
   Force $ (1 / 2) * d * ((if v < w then 1 else (-1)) * ((v - w) ** 2)) * c * a
+{-# INLINE drag #-}
 
 -- Calculate acceleration.
 accel :: Force -> Mass -> Acceleration
 accel (Force f) (Mass m) = Acceleration $ f / m
+{-# INLINE accel #-}
 
 force :: Mass -> Acceleration -> Force
 force (Mass m) (Acceleration a) = Force $ m * a
+{-# INLINE force #-}
 
 -- Calculate velocity.
 velo :: Velocity -> Acceleration -> SimulationTime -> Velocity
 velo (Velocity v) (Acceleration a) (SimulationTime t _) = Velocity $ v + a * t
+{-# INLINE velo #-}
 
 -- Calculate displacement.
 displacement
@@ -58,6 +67,7 @@ displacement
   -> Altitude
 displacement (Altitude x) (Velocity v) (Acceleration a) (SimulationTime t _) =
   Altitude $ x + (v * t) + ((1 / 2) * a * t ** 2)
+{-# INLINE displacement #-}
 
 altToValues :: Altitude -> AltitudeRegionValues
 altToValues (Altitude alt)
