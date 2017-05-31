@@ -29,8 +29,14 @@ main = do
       pressures = nub (fmap (pressure . gribLineToRaw) gribLines)
       (lastAscent, accAscent) =
         runWriter $ sim Ascent s pressures gribLines tellPred
+      ascentLastSim =
+        Simulation
+        (retSV lastAscent)
+        (retPV lastAscent)
+        (retBV lastAscent)
+        (retW lastAscent)
       (lastDescent, accDescent) =
-        runWriter $ sim Descent (Simulation (retSV lastAscent) (retPV lastAscent) (retBV lastAscent) (retW lastAscent)) pressures gribLines tellPred
+        runWriter $ sim Descent ascentLastSim pressures gribLines tellPred
   putStrLn "var flight_path = ["
   putStr . intercalate ",\n" . map jsonLatLon . D.toList $ accAscent
   putStrLn ","
