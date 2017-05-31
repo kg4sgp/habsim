@@ -102,9 +102,9 @@ sim p
     filterPressure = roundToClosest pres pressureList
     (windX, windY) =
       let def = (wind_x', wind_y')
-      in case filterKeyedGrib lat' lon' filterPressure UGRD gribLines of
+      in case filterKeyedGrib (Latitude lat') (Longitude lon') filterPressure UGRD gribLines of
            Just (UGRDGribLine (UGRDLine u)) ->
-             case filterKeyedGrib lat' lon' filterPressure VGRD gribLines of
+             case filterKeyedGrib (Latitude lat') (Longitude lon') filterPressure VGRD gribLines of
                Just (VGRDGribLine (VGRDLine v)) ->
                  (WindMs (velocity u), WindMs (velocity v))
                _ -> def

@@ -19,7 +19,6 @@ pretty s@(Simulation sv pv b w) =
             , "==============="
             ]
 
-
 main :: IO ()
 main = do
   csvName <- fmap head getArgs

@@ -20,6 +20,7 @@ import Control.Monad (mzero)
 import qualified Data.ByteString.Char8 as B
 import Data.Char (isDigit)
 import Data.Csv
+import Data.HABSim.Types (Longitude (..), Latitude (..))
 import Data.Hashable
 import Data.Time
 import qualified Data.Vector as V
@@ -52,8 +53,8 @@ data RawGribLine =
               , forecastTime  :: GribTime
               , direction     :: Direction
               , pressure      :: Int
-              , longitude     :: Double
-              , latitude      :: Double
+              , longitude     :: Longitude
+              , latitude      :: Latitude
               , velocity      :: Double
               } deriving (Eq, Show)
 
@@ -85,10 +86,8 @@ instance FromField GribTime where
     maybe mzero pure (parseTimeM True defaultTimeLocale "%F %T" (B.unpack t))
   {-# INLINE parseField #-}
 
-type Lat = Double
-type Lon = Double
 type Pressure = Int
-type Key = (Lat, Lon, Pressure, Direction)
+type Key = (Longitude, Latitude, Pressure, Direction)
 
 newtype KeyedGribLine =
   KeyedGribLine (Key, GribLine)
@@ -102,11 +101,11 @@ instance FromRecord KeyedGribLine where
         foreTime <- v .! 1
         dir <- v .! 2
         press <- mbToInt <$> v .! 3
-        lat <- v .! 4
-        lon <- v .! 5
+        lon <- v .! 4
+        lat <- v .! 5
         vel <- v .! 6
-        let rawLine = RawGribLine refTime foreTime dir press lat lon vel
-            key = (lat, lon, press, dir)
+        let rawLine = RawGribLine refTime foreTime dir press lon lat vel
+            key = (lon, lat, press, dir)
         return $ case dir of
                    UGRD -> KeyedGribLine (key, (UGRDGribLine (UGRDLine rawLine)))
                    VGRD -> KeyedGribLine (key, (VGRDGribLine (VGRDLine rawLine)))

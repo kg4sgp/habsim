@@ -33,6 +33,7 @@ module Data.HABSim.Grib2.CSVParse
 import qualified Data.ByteString.Lazy.Char8 as BL
 import Data.Csv
 import Data.HABSim.Grib2.CSVParse.Types
+import Data.HABSim.Types (Latitude (..), Longitude (..))
 import qualified Data.HashMap.Lazy as HM
 import qualified Data.Vector as V
 
@@ -62,13 +63,13 @@ gribLineToRaw (OtherGribLine l) = l
 -- If we for some reason don't have both 'UGRD' and 'VGRD' of our filter result,
 -- then we return 'Nothing'. Otherwise we return a 'GribPair' containing both.
 filterKeyedGrib
-  :: Double -- ^ Latitude
-  -> Double -- ^ Longitude
+  :: Latitude
+  -> Longitude
   -> Int -- ^ Pressure
   -> Direction -- ^ The 'Direction' to filter for.
   -> HM.HashMap Key GribLine -- ^ Input lines
   -> Maybe GribLine -- ^ Output line
-filterKeyedGrib lat lon pressure' dir gribLines = do
-  let lat' = fromIntegral (round (lat * 4) :: Integer) / 4
-      lon' = fromIntegral (round (lon * 4) :: Integer) / 4
-  HM.lookup (lat', lon', pressure', dir) gribLines
+filterKeyedGrib (Latitude lat) (Longitude lon) pressure' dir gribLines =
+  let lat' = Latitude $ fromIntegral (round (lat * 4) :: Integer) / 4
+      lon' = Longitude $ fromIntegral (round (lon * 4) :: Integer) / 4
+  in HM.lookup (lon', lat', pressure', dir) gribLines

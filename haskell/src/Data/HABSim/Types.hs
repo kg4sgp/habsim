@@ -2,8 +2,11 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 module Data.HABSim.Types where
 
-#define DoubleGND Enum, Eq, Floating, Fractional, Num, Ord, Read, Real, \
-  RealFloat, RealFrac, Show
+import Data.Csv (FromField)
+import Data.Hashable (Hashable)
+
+#define DoubleGND Enum, Eq, Floating, Fractional, FromField, Hashable, Num, \
+  Ord, Read, Real, RealFloat, RealFrac, Show
 
 -- I'd like to see us get rid of these and maybe use something like the
 -- @dimensional@ package instead. We can still wrap them in newtypes, but we'll
