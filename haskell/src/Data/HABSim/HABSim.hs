@@ -16,14 +16,17 @@ sim
   -> Simulation
   -> V.Vector Int -- ^ Vector of pressures to round to from Grib file
   -> V.Vector GribLine
+  -> (Simulation -> Bool) -- ^ We record the line when this predicate is met
   -> Writer (D.DList Simulation) Simulation
 sim p
-    (Simulation sv
-                (PosVel lat' lon' alt' vel_x' vel_y' vel_z')
-                (Burst mass' bal_cd' par_cd' packages_cd' launch_time' burst_vol' b_volume' b_press')
-                (Wind wind_x' wind_y'))
+    simul@(Simulation
+            sv
+            (PosVel lat' lon' alt' vel_x' vel_y' vel_z')
+            (Burst mass' bal_cd' par_cd' packages_cd' launch_time' burst_vol' b_volume' b_press')
+            (Wind wind_x' wind_y'))
     pressureList
     gribLines
+    tellPred
   | baseGuard p = do
     let pv = PosVel lat' lon' alt' vel_x' vel_y' vel_z'
         bv = Burst mass' bal_cd' par_cd' packages_cd' launch_time' burst_vol' b_volume' b_press'
@@ -35,9 +38,9 @@ sim p
         bv = Burst mass' bal_cd' par_cd' packages_cd' launch_time' burst_vol' (pitch p nVol b_volume') (pitch p pres b_press')
         w = Wind windX windY
         s = Simulation sv' pv bv w
-    when (round (simulationTime sv) `mod` 100 == (0 :: Integer)) $
+    when (tellPred simul) $
       tell (D.singleton s)
-    sim p s pressureList gribLines
+    sim p s pressureList gribLines tellPred
   where
     -- The guard to use depends on the pitch
     baseGuard Ascent = b_volume' >= burst_vol'

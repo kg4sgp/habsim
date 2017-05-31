@@ -23,12 +23,14 @@ main = do
       bv = Burst 2.0 0.47 1.0 0.5 0.0 540.0 (Liter 5.0) 120000.0
       w = Wind 4.0 4.0
       s = Simulation sv pv bv w
+      tellPred simul =
+        round (simulationTime (retSV simul)) `mod` 100 == (0 :: Integer)
       gribLines = either error id (decodeGrib csv)
       pressures = nub (fmap (pressure . gribLineToRaw) gribLines)
       (lastAscent, accAscent) =
-        runWriter $ sim Ascent s pressures gribLines
+        runWriter $ sim Ascent s pressures gribLines tellPred
       (lastDescent, accDescent) =
-        runWriter $ sim Descent (Simulation (retSV lastAscent) (retPV lastAscent) (retBV lastAscent) (retW lastAscent)) pressures gribLines
+        runWriter $ sim Descent (Simulation (retSV lastAscent) (retPV lastAscent) (retBV lastAscent) (retW lastAscent)) pressures gribLines tellPred
   putStrLn "var flight_path = ["
   putStr . intercalate ",\n" . map jsonLatLon . D.toList $ accAscent
   putStrLn ","

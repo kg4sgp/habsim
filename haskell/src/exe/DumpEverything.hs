@@ -20,9 +20,9 @@ main = do
       gribLines = either error id (decodeGrib csv)
       pressures = nub (fmap (pressure . gribLineToRaw) gribLines)
       (lastAscent, accAscent) =
-        runWriter $ sim Ascent s pressures gribLines
+        runWriter $ sim Ascent s pressures gribLines (const True)
       (lastDescent, accDescent) =
-        runWriter $ sim Descent (Simulation (retSV lastAscent) (retPV lastAscent) (retBV lastAscent) (retW lastAscent)) pressures gribLines
+        runWriter $ sim Descent (Simulation (retSV lastAscent) (retPV lastAscent) (retBV lastAscent) (retW lastAscent)) pressures gribLines (const True)
   traverse_ print accAscent
   print lastAscent
   traverse_ print accDescent
