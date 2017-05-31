@@ -36,7 +36,7 @@ boyancy p_air p_gas v = (p_air-p_gas)*(acceleration g)*v
 -- Calculate drag.
 drag :: Density -> Velocity -> WindMs -> CoeffDrag -> CrossSecArea -> Force
 drag (Density d) (Velocity v) (WindMs w) (CoeffDrag c) (CrossSecArea a) =
-  Force $ (1 / 2) * d * ((v - w) ** 2) * c * a
+  Force $ (1 / 2) * d * ((if v < w then 1 else (-1)) * ((v - w) ** 2)) * c * a
 
 -- Calculate acceleration.
 accel :: Force -> Mass -> Acceleration
