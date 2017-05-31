@@ -5,7 +5,6 @@
 -- License : (see project LICENSE file)
 -- Maintainer : Ricky Elrod <ricky@elrod.me>
 -- Stability : experimental
--- Portability : GeneralizedNewtypeDeriving
 --
 -- This module provides utilities for parsing and filtering data from a
 -- @wgrib2@-generated CSV file. Once the CSV files is generated, it can be
@@ -24,25 +23,32 @@
 ----------------------------------------------------------------------------
 module Data.HABSim.Grib2.CSVParse
   ( module Data.HABSim.Grib2.CSVParse.Types
-  , decodeGrib
   , gribLineToRaw
-  , filterGrib
+  -- * Keyed/HashMap-based Grib data
+  , decodeKeyedGrib
+  , keyedGribToHM
+  , filterKeyedGrib
   ) where
 
-import Control.Monad (mzero)
 import qualified Data.ByteString.Lazy.Char8 as BL
 import Data.Csv
 import Data.HABSim.Grib2.CSVParse.Types
-import Data.List (elem)
+import qualified Data.HashMap.Lazy as HM
 import qualified Data.Vector as V
 
 -- | A helper function that primarily exists just to help type inference.
 --
--- @decodeGrib = decode NoHeader@ (where 'decode' and 'NoHeader' both come from
--- Cassava).
-decodeGrib :: BL.ByteString -> Either String (V.Vector GribLine)
-decodeGrib = decode NoHeader
-{-# INLINE decodeGrib #-}
+-- @decodeKeyedGrib = decode NoHeader@ (where 'decode' and 'NoHeader' both come
+-- from Cassava).
+decodeKeyedGrib :: BL.ByteString -> Either String (V.Vector KeyedGribLine)
+decodeKeyedGrib = decode NoHeader
+{-# INLINE decodeKeyedGrib #-}
+
+-- | Convert a 'V.Vector' of 'KeyedGribLine' into a 'HM.HashMap' keyed on the
+-- latitude longitude, pressure, and direction of the grib line.
+keyedGribToHM :: V.Vector KeyedGribLine -> HM.HashMap Key GribLine
+keyedGribToHM = V.foldr (\(KeyedGribLine (key, gline)) hm ->
+                            HM.insert key gline hm) HM.empty
 
 -- | Given any kind of 'GridLine' (usually either a 'UGRDGribLine' or a
 -- 'VGRDGribLine', but could also be an 'OtherGribLine'), pull the raw Grib line
@@ -55,44 +61,14 @@ gribLineToRaw (OtherGribLine l) = l
 -- | Filter Grib lines from a 'V.Vector' 'GribLine'.
 -- If we for some reason don't have both 'UGRD' and 'VGRD' of our filter result,
 -- then we return 'Nothing'. Otherwise we return a 'GribPair' containing both.
-filterGrib
+filterKeyedGrib
   :: Double -- ^ Latitude
   -> Double -- ^ Longitude
   -> Int -- ^ Pressure
-  -> [Direction] -- ^ The 'Direction' to filter for.
-  -> V.Vector GribLine -- ^ Input lines
-  -> Maybe GribPair -- ^ Output lines (both UGRD and VGRD)
-filterGrib lat lon pressure' dirs gribLines = do
+  -> Direction -- ^ The 'Direction' to filter for.
+  -> HM.HashMap Key GribLine -- ^ Input lines
+  -> Maybe GribLine -- ^ Output line
+filterKeyedGrib lat lon pressure' dir gribLines = do
   let lat' = fromIntegral (round (lat * 4) :: Integer) / 4
       lon' = fromIntegral (round (lon * 4) :: Integer) / 4
-      filteredLines =
-        V.filter (\x -> let raw = gribLineToRaw x
-                        in direction raw `elem` dirs &&
-                           latitude raw == lat' &&
-                           longitude raw == lon' &&
-                           pressure raw == pressure') gribLines
-  first <- filteredLines V.!? 0
-  second <- filteredLines V.!? 1
-  case first of
-    UGRDGribLine u ->
-      case second of
-        VGRDGribLine v -> return (GribPair u v)
-        _ -> mzero
-    VGRDGribLine v ->
-      case second of
-        UGRDGribLine u -> return (GribPair u v)
-        _ -> mzero
-    _ -> mzero
-
-{-
-main :: IO ()
-main = do
-  args <- getArgs
-  when (length args /= 1) (error "Must pass CSV file to use")
-  f <- BL.readFile (head args)
-  case decodeGrib f of
-    Left e -> error e
-    Right v ->
-      let filteredLines = filterGrib (-80) (40.32) 925 v
-      in print filteredLines
--}
+  HM.lookup (lat', lon', pressure', dir) gribLines

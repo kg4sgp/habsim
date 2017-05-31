@@ -20,6 +20,7 @@ import Control.Monad (mzero)
 import qualified Data.ByteString.Char8 as B
 import Data.Char (isDigit)
 import Data.Csv
+import Data.Hashable
 import Data.Time
 import qualified Data.Vector as V
 
@@ -30,6 +31,11 @@ import qualified Data.Vector as V
 -- If we're given something other than @UGRD@ or @VGRD@ in this field, we store
 -- the value in the 'Other' constructor.
 data Direction = UGRD | VGRD | Other String deriving (Eq, Show)
+
+instance Hashable Direction where
+  hashWithSalt s (Other str) = s `hashWithSalt` (0::Int) `hashWithSalt` str
+  hashWithSalt s UGRD = s `hashWithSalt` (1::Int)
+  hashWithSalt s VGRD = s `hashWithSalt` (2::Int)
 
 -- | This is used for both the 'referenceTime' and the 'forecastTime'. The
 -- reason it exists is solely so we can create a 'FromField' instance on
@@ -68,14 +74,6 @@ data GribLine = UGRDGribLine UGRDLine
               | OtherGribLine RawGribLine
   deriving (Eq, Show)
 
--- | A pair of Grib lines, where one is a 'UGRDLine' and one is a 'VGRDLine'.
--- This is useful for filtering (see 'filterGrib' below) where we want to return
--- one of each and ensure through type safety that we don't get them confused.
-data GribPair =
-  GribPair { uGrd :: UGRDLine
-           , vGrd :: VGRDLine
-           } deriving (Eq, Show)
-
 instance FromField Direction where
   parseField (B.unpack -> "UGRD") = pure UGRD
   parseField (B.unpack -> "VGRD") = pure VGRD
@@ -87,7 +85,16 @@ instance FromField GribTime where
     maybe mzero pure (parseTimeM True defaultTimeLocale "%F %T" (B.unpack t))
   {-# INLINE parseField #-}
 
-instance FromRecord GribLine where
+type Lat = Double
+type Lon = Double
+type Pressure = Int
+type Key = (Lat, Lon, Pressure, Direction)
+
+newtype KeyedGribLine =
+  KeyedGribLine (Key, GribLine)
+  deriving (Eq, Show)
+
+instance FromRecord KeyedGribLine where
   parseRecord v
     | V.length v == 7 =
       do
@@ -99,11 +106,11 @@ instance FromRecord GribLine where
         lon <- v .! 5
         vel <- v .! 6
         let rawLine = RawGribLine refTime foreTime dir press lat lon vel
+            key = (lat, lon, press, dir)
         return $ case dir of
-                   UGRD -> UGRDGribLine (UGRDLine rawLine)
-                   VGRD -> VGRDGribLine (VGRDLine rawLine)
-                   Other _ -> OtherGribLine rawLine
+                   UGRD -> KeyedGribLine (key, (UGRDGribLine (UGRDLine rawLine)))
+                   VGRD -> KeyedGribLine (key, (VGRDGribLine (VGRDLine rawLine)))
+                   Other _ -> KeyedGribLine (key, (OtherGribLine rawLine))
     | otherwise = mzero
     where
       mbToInt s = read (takeWhile isDigit s)
-

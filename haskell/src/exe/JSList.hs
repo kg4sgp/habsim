@@ -5,7 +5,9 @@ import qualified Data.ByteString.Lazy.Char8 as BL
 import qualified Data.DList as D
 import Data.HABSim.HABSim hiding (pressure)
 import Data.HABSim.Grib2.CSVParse
+import qualified Data.HashMap.Lazy as HM
 import Data.List (intercalate)
+import qualified Data.Vector as V
 import System.Environment
 import Utility
 
@@ -25,8 +27,8 @@ main = do
       s = Simulation sv pv bv w
       tellPred simul =
         round (simulationTime (retSV simul)) `mod` 100 == (0 :: Integer)
-      gribLines = either error id (decodeGrib csv)
-      pressures = nub (fmap (pressure . gribLineToRaw) gribLines)
+      gribLines = either error keyedGribToHM (decodeKeyedGrib csv)
+      pressures = nub (fmap (pressure . gribLineToRaw) (V.fromList . HM.elems $ gribLines))
       (lastAscent, accAscent) =
         runWriter $ sim Ascent s pressures gribLines tellPred
       ascentLastSim =

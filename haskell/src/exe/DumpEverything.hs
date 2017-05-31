@@ -5,6 +5,8 @@ import qualified Data.ByteString.Lazy.Char8 as BL
 import Data.Foldable (traverse_)
 import Data.HABSim.HABSim hiding (pressure)
 import Data.HABSim.Grib2.CSVParse
+import qualified Data.HashMap.Lazy as HM
+import qualified Data.Vector as V
 import System.Environment
 import Utility
 
@@ -27,8 +29,8 @@ main = do
       bv = Burst 2.0 0.47 1.0 0.5 0.0 540.0 (Liter 5.0) 120000.0
       w = Wind 4.0 4.0
       s = Simulation sv pv bv w
-      gribLines = either error id (decodeGrib csv)
-      pressures = nub (fmap (pressure . gribLineToRaw) gribLines)
+      gribLines = either error keyedGribToHM (decodeKeyedGrib csv)
+      pressures = nub (fmap (pressure . gribLineToRaw) (V.fromList . HM.elems $ gribLines))
       (lastAscent, accAscent) =
         runWriter $ sim Ascent s pressures gribLines (const True)
       ascentLastSim =

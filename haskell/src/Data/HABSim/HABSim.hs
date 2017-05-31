@@ -7,15 +7,16 @@ import Control.Monad.Writer
 import qualified Data.DList as D
 import Data.HABSim.Internal
 import Data.HABSim.Types
-import Data.HABSim.Grib2.CSVParse (filterGrib)
+import Data.HABSim.Grib2.CSVParse (filterKeyedGrib)
 import Data.HABSim.Grib2.CSVParse.Types
+import qualified Data.HashMap.Lazy as HM
 import qualified Data.Vector as V
 
 sim
   :: Pitch
   -> Simulation
   -> V.Vector Int -- ^ Vector of pressures to round to from Grib file
-  -> V.Vector GribLine
+  -> HM.HashMap Key GribLine
   -> (Simulation -> Bool) -- ^ We record the line when this predicate is met
   -> Writer (D.DList Simulation) Simulation
 sim p
@@ -100,7 +101,11 @@ sim p
 
     filterPressure = roundToClosest pres pressureList
     (windX, windY) =
-      case filterGrib lat' lon' filterPressure [UGRD, VGRD] gribLines of
-        Just (GribPair (UGRDLine u) (VGRDLine v)) ->
-          (WindMs (velocity u), WindMs (velocity v))
-        Nothing -> (wind_x', wind_y')
+      let def = (wind_x', wind_y')
+      in case filterKeyedGrib lat' lon' filterPressure UGRD gribLines of
+           Just (UGRDGribLine (UGRDLine u)) ->
+             case filterKeyedGrib lat' lon' filterPressure VGRD gribLines of
+               Just (VGRDGribLine (VGRDLine v)) ->
+                 (WindMs (velocity u), WindMs (velocity v))
+               _ -> def
+           _ -> def
