@@ -8,6 +8,16 @@ import Data.HABSim.Grib2.CSVParse
 import System.Environment
 import Utility
 
+pretty :: Simulation -> String
+pretty s@(Simulation sv pv b w) =
+  unlines $ [ show sv
+            , show pv
+            , show b
+            , show w
+            , "==============="
+            ]
+
+
 main :: IO ()
 main = do
   csvName <- fmap head getArgs
@@ -29,7 +39,7 @@ main = do
         (retW lastAscent)
       (lastDescent, accDescent) =
         runWriter $ sim Descent ascentLastSim pressures gribLines (const True)
-  traverse_ print accAscent
-  print lastAscent
-  traverse_ print accDescent
-  print lastDescent
+  traverse_ (putStrLn . pretty) accAscent
+  putStrLn . pretty $ lastAscent
+  traverse_ (putStrLn . pretty) accDescent
+  putStrLn . pretty $ lastDescent
