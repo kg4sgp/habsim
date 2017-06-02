@@ -1,5 +1,7 @@
 module Data.HABSim.Internal where
 
+import Control.Lens
+import Data.HABSim.Lens
 import Data.HABSim.Types
 import qualified Data.Vector as V
 
@@ -35,7 +37,7 @@ gas_dens mm p t = (mm*p)/(r*t)
 
 -- | Calculate boyancy.
 boyancy :: Double -> Double -> Double -> Double
-boyancy p_air p_gas v = (p_air-p_gas)*(acceleration g)*v
+boyancy p_air p_gas v = (p_air-p_gas)*(g ^. acceleration)*v
 {-# INLINE boyancy #-}
 
 -- Calculate drag.
@@ -86,12 +88,12 @@ altToPressure :: Altitude -> PressureDensity
 altToPressure a@(Altitude alt) =
   let (AltitudeRegionValues hb' tb' lb' pb' rho') = altToValues a
       pr = if lb' == 0
-           then pb' * exp (((- (acceleration g)) * m * (alt - hb')) / (r * tb'))
-           else pb' * ((tb' / (tb' + lb' * (alt - hb')))**(((acceleration g) * m) / (r * lb')))
+           then pb' * exp (((- (g ^. acceleration)) * m * (alt - hb')) / (r * tb'))
+           else pb' * ((tb' / (tb' + lb' * (alt - hb')))**(((g ^. acceleration) * m) / (r * lb')))
       dn = if lb' == 0
-           then rho' * exp (((- (acceleration g)) * m * (alt - hb')) / (r * tb'))
+           then rho' * exp (((- (g ^. acceleration)) * m * (alt - hb')) / (r * tb'))
            else rho' *
-                ((tb' / (tb' + lb' * (alt - hb')))**(1 + (((acceleration g) * m) / (r * lb'))))
+                ((tb' / (tb' + lb' * (alt - hb')))**(1 + (((g ^. acceleration) * m) / (r * lb'))))
   in PressureDensity (Pressure pr) (Density dn)
 
 -- | Given some number-like thing and a 'V.Vector' of other number-like things,

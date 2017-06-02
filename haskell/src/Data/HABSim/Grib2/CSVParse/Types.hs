@@ -1,3 +1,4 @@
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ViewPatterns #-}
 
@@ -41,7 +42,7 @@ instance Hashable Direction where
 -- | This is used for both the 'referenceTime' and the 'forecastTime'. The
 -- reason it exists is solely so we can create a 'FromField' instance on
 -- 'UTCTime' while avoiding orphan instances.
-newtype GribTime = GribTime UTCTime
+newtype GribTime = GribTime { _gribTime :: UTCTime }
   deriving (Eq, Ord, Read, Show, ParseTime, FormatTime)
 
 -- | This is a (mostly-)raw gribline, right after being parsed.
@@ -49,20 +50,20 @@ newtype GribTime = GribTime UTCTime
 -- The "mostly-" comes from the fact that we wrap a few things (e.g. the times
 -- into 'GribTime') and convert 'pressure' into an 'Int'.
 data RawGribLine =
-  RawGribLine { referenceTime :: GribTime
-              , forecastTime  :: GribTime
-              , direction     :: Direction
-              , pressure      :: Int
-              , longitude     :: Longitude
-              , latitude      :: Latitude
-              , velocity      :: Double
+  RawGribLine { _referenceTime :: GribTime
+              , _forecastTime  :: GribTime
+              , _direction     :: Direction
+              , _pressure      :: Int
+              , _longitude     :: Longitude
+              , _latitude      :: Latitude
+              , _velocity      :: Double
               } deriving (Eq, Show)
 
 -- | A single 'UGRD' line.
-newtype UGRDLine = UGRDLine RawGribLine deriving (Eq, Show)
+newtype UGRDLine = UGRDLine { _raw :: RawGribLine } deriving (Eq, Show)
 
 -- | A single 'VGRD' line.
-newtype VGRDLine = VGRDLine RawGribLine deriving (Eq, Show)
+newtype VGRDLine = VGRDLine { _raw :: RawGribLine } deriving (Eq, Show)
 
 -- | Either a 'UGRDLine' or a 'VGRDLine'. This is so we can parse and ultimately
 -- return a 'V.Vector' containing both 'UGRD' and 'VGRD' lines. We return a
