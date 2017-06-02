@@ -4,7 +4,7 @@ import Control.Lens
 import Control.Monad.Writer
 import qualified Data.ByteString.Lazy.Char8 as BL
 import qualified Data.DList as D
-import Data.HABSim.HABSim hiding (pressure)
+import Data.HABSim.HABSim
 import Data.HABSim.Grib2.CSVParse
 import Data.HABSim.Lens
 import qualified Data.HashMap.Lazy as HM
