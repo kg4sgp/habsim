@@ -60,10 +60,14 @@ data RawGribLine =
               } deriving (Eq, Show)
 
 -- | A single 'UGRD' line.
-newtype UGRDLine = UGRDLine { _raw :: RawGribLine } deriving (Eq, Show)
+newtype UGRDLine = UGRDLine { _uGRDLineRaw :: RawGribLine } deriving (Eq, Show)
 
 -- | A single 'VGRD' line.
-newtype VGRDLine = VGRDLine { _raw :: RawGribLine } deriving (Eq, Show)
+newtype VGRDLine = VGRDLine { _vGRDLineRaw :: RawGribLine } deriving (Eq, Show)
+
+-- | A single non-UGRD and non-VGRD line.
+newtype OtherLine =
+  OtherLine { _otherLineRaw :: RawGribLine } deriving (Eq, Show)
 
 -- | Either a 'UGRDLine' or a 'VGRDLine'. This is so we can parse and ultimately
 -- return a 'V.Vector' containing both 'UGRD' and 'VGRD' lines. We return a
@@ -73,7 +77,7 @@ newtype VGRDLine = VGRDLine { _raw :: RawGribLine } deriving (Eq, Show)
 -- If the line is anything else, we return the raw line in 'OtherGribLine'.
 data GribLine = UGRDGribLine UGRDLine
               | VGRDGribLine VGRDLine
-              | OtherGribLine RawGribLine
+              | OtherGribLine OtherLine
   deriving (Eq, Show)
 
 instance FromField Direction where
@@ -108,9 +112,12 @@ instance FromRecord KeyedGribLine where
         let rawLine = RawGribLine refTime foreTime dir press lon lat vel
             key = (lon, lat, press, dir)
         return $ case dir of
-                   UGRD -> KeyedGribLine (key, (UGRDGribLine (UGRDLine rawLine)))
-                   VGRD -> KeyedGribLine (key, (VGRDGribLine (VGRDLine rawLine)))
-                   Other _ -> KeyedGribLine (key, (OtherGribLine rawLine))
+                   UGRD ->
+                     KeyedGribLine (key, (UGRDGribLine (UGRDLine rawLine)))
+                   VGRD ->
+                     KeyedGribLine (key, (VGRDGribLine (VGRDLine rawLine)))
+                   Other _ ->
+                     KeyedGribLine (key, (OtherGribLine (OtherLine rawLine)))
     | otherwise = mzero
     where
       mbToInt s = read (takeWhile isDigit s)

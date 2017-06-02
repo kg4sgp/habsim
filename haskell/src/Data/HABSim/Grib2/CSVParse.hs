@@ -57,7 +57,7 @@ keyedGribToHM = V.foldr (\(KeyedGribLine (key, gline)) hm ->
 gribLineToRaw :: GribLine -> RawGribLine
 gribLineToRaw (UGRDGribLine (UGRDLine l)) = l
 gribLineToRaw (VGRDGribLine (VGRDLine l)) = l
-gribLineToRaw (OtherGribLine l) = l
+gribLineToRaw (OtherGribLine (OtherLine l)) = l
 
 -- | Filter Grib lines from a 'V.Vector' 'GribLine'.
 -- If we for some reason don't have both 'UGRD' and 'VGRD' of our filter result,

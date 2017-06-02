@@ -1,5 +1,4 @@
 {-# LANGUAGE CPP #-}
-{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 module Data.HABSim.Types where
 
@@ -45,8 +44,8 @@ data AzElCord =
            }
 
 data PressureDensity =
-  PressureDensity { _pressure :: Pressure
-                  , _density :: Density
+  PressureDensity { _pressureDensityPressure :: Pressure
+                  , _pressureDensityDensity :: Density
                   } deriving (Eq, Ord, Show)
 
 data AltitudeRegionValues =
@@ -63,23 +62,23 @@ data SimulationTime =
                  } deriving (Eq, Ord, Show)
 
 data PosVel =
-  PosVel {  _lat       :: !Double
-          , _lon       :: !Double
-          , _alt       :: Altitude
-          , _vel_x     :: Velocity
-          , _vel_y     :: Velocity
-          , _vel_z     :: Velocity
+  PosVel {  _posVelLat       :: !Double
+          , _posVelLon       :: !Double
+          , _posVelAlt       :: Altitude
+          , _posVelVel_x     :: Velocity
+          , _posVelVel_y     :: Velocity
+          , _posVelVel_z     :: Velocity
           } deriving (Eq, Ord, Show)
 
 data Burst =
-  Burst { _mass          :: Mass
-        , _bal_cd        :: CoeffDrag
-        , _par_cd        :: CoeffDrag
-        , _packages_cd   :: CoeffDrag
-        , _launch_time   :: !Double
-        , _burst_vol     :: Volume
-        , _b_vol         :: Volume
-        , _b_pres        :: Pressure
+  Burst { _burstMass          :: Mass
+        , _burstBal_cd        :: CoeffDrag
+        , _burstPar_cd        :: CoeffDrag
+        , _burstPackages_cd   :: CoeffDrag
+        , _burstLaunch_time   :: !Double
+        , _burstBurst_vol     :: Volume
+        , _burstB_vol         :: Volume
+        , _burstB_pres        :: Pressure
         } deriving (Eq, Ord, Show)
 
 data Wind =

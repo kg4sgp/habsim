@@ -1,10 +1,12 @@
 module Main where
 
+import Control.Lens
 import Control.Monad.Writer
 import qualified Data.ByteString.Lazy.Char8 as BL
 import Data.Foldable (traverse_)
-import Data.HABSim.HABSim hiding (pressure)
+import Data.HABSim.HABSim
 import Data.HABSim.Grib2.CSVParse
+import Data.HABSim.Lens
 import qualified Data.HashMap.Lazy as HM
 import Data.Time
 import qualified Data.Vector as V
@@ -36,15 +38,18 @@ main = do
       s = Simulation sv pv bv w
       startTime = UTCTime (fromGregorian 2017 05 28) 43200
       gribLines = either error keyedGribToHM (decodeKeyedGrib csv)
-      pressures = nub (fmap (pressure . gribLineToRaw) (V.fromList . HM.elems $ gribLines))
+      pressures =
+        nub
+        (fmap (\x -> gribLineToRaw x ^. pressure)
+        (V.fromList . HM.elems $ gribLines))
       (lastAscent, accAscent) =
         runWriter $ sim Ascent s pressures gribLines (const True)
       ascentLastSim =
         Simulation
-        (retSV lastAscent)
-        (retPV lastAscent)
-        (retBV lastAscent)
-        (retW lastAscent)
+        (lastAscent ^. retSV)
+        (lastAscent ^. retPV)
+        (lastAscent ^. retBV)
+        (lastAscent ^. retW)
       (lastDescent, accDescent) =
         runWriter $ sim Descent ascentLastSim pressures gribLines (const True)
   traverse_ (putStrLn . pretty startTime) accAscent

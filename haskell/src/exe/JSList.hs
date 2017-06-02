@@ -1,10 +1,12 @@
 module Main where
 
+import Control.Lens
 import Control.Monad.Writer
 import qualified Data.ByteString.Lazy.Char8 as BL
 import qualified Data.DList as D
 import Data.HABSim.HABSim hiding (pressure)
 import Data.HABSim.Grib2.CSVParse
+import Data.HABSim.Lens
 import qualified Data.HashMap.Lazy as HM
 import Data.List (intercalate)
 import qualified Data.Vector as V
@@ -26,17 +28,20 @@ main = do
       w = Wind 4.0 4.0
       s = Simulation sv pv bv w
       tellPred simul =
-        round (simulationTime (retSV simul)) `mod` 100 == (0 :: Integer)
+        round (_simulationTime (_retSV simul)) `mod` 100 == (0 :: Integer)
       gribLines = either error keyedGribToHM (decodeKeyedGrib csv)
-      pressures = nub (fmap (pressure . gribLineToRaw) (V.fromList . HM.elems $ gribLines))
+      pressures =
+        nub
+        (fmap (\x -> gribLineToRaw x ^. pressure)
+        (V.fromList . HM.elems $ gribLines))
       (lastAscent, accAscent) =
         runWriter $ sim Ascent s pressures gribLines tellPred
       ascentLastSim =
         Simulation
-        (retSV lastAscent)
-        (retPV lastAscent)
-        (retBV lastAscent)
-        (retW lastAscent)
+        (lastAscent ^. retSV)
+        (lastAscent ^. retPV)
+        (lastAscent ^. retBV)
+        (lastAscent ^. retW)
       (lastDescent, accDescent) =
         runWriter $ sim Descent ascentLastSim pressures gribLines tellPred
   putStrLn "var flight_path = ["
