@@ -72,7 +72,7 @@ displacement (Altitude x) (Velocity v) (Acceleration a) (SimulationTime t _) =
 {-# INLINE displacement #-}
 
 -- Bilinear Interpolation
-:: Fractional a => a -> a -> a -> a -> a -> a -> a -> a -> a -> a -> a
+biLinIntp :: Fractional a => a -> a -> a -> a -> a -> a -> a -> a -> a -> a -> a
 biLinIntp x y q11 q12 q21 q22 x1 x2 y1 y2 = p
   where
    r1 = ((x2 - x)/(x2 - x1))*q11 + ((x - x1)/(x2 - x1))*q21
