@@ -71,6 +71,14 @@ displacement (Altitude x) (Velocity v) (Acceleration a) (SimulationTime t _) =
   Altitude $ x + (v * t) + ((1 / 2) * a * t ** 2)
 {-# INLINE displacement #-}
 
+-- Bilinear Interpolation
+:: Fractional a => a -> a -> a -> a -> a -> a -> a -> a -> a -> a -> a
+biLinIntp x y q11 q12 q21 q22 x1 x2 y1 y2 = p
+  where
+   r1 = ((x2 - x)/(x2 - x1))*q11 + ((x - x1)/(x2 - x1))*q21
+   r2 = ((x2 - x)/(x2 - x1))*q12 + ((x - x1)/(x2 - x1))*q22
+   p  = ((y2 - y)/(y2 - y1))*r1  + ((y - y1)/(y2 - y1))*r2
+
 altToValues :: Altitude -> AltitudeRegionValues
 altToValues (Altitude alt)
   --                                    alt(m)Temp(K)  Lapse Rate    Pres(Pa)  Dens(kg/m^3)
