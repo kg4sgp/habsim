@@ -114,3 +114,20 @@ roundToClosest :: (Ord a, Num a, Integral b) => a -> V.Vector b -> b
 roundToClosest n xs =
   let differences = fmap (\x -> abs (n - fromIntegral x)) xs
   in xs V.! V.minIndex differences
+
+-- We need to take our longitude and latitude, multiply it by 1/resolution
+-- then take the floor and ceiling of both numbers and organize them as
+-- (f,f) (f,c) (c,f) (c,c) and report this back as the bounding box
+latLonBox :: Latitude -> Longitude -> Double -> ((Latitude, Longitude), (Latitude, Longitude), (Latitude, Longitude), (Latitude, Longitude))
+latLonBox lat lon res = ((flat, flon), (flat, clon), (clat, flon), (clat, clon))
+  where
+    mul = 1/res
+    flat = fromIntegral (floor (lat * Latitude mul) :: Integer) / (Latitude mul)
+    flon = fromIntegral (floor (lon * Longitude mul) :: Integer) / (Longitude mul)
+    clat = fromIntegral (ceiling (lat * Latitude mul) :: Integer) / (Latitude mul)
+    clon = fromIntegral (ceiling (lon * Longitude mul) :: Integer) / (Longitude mul)
+
+
+
+
+
