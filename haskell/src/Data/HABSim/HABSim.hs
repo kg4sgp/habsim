@@ -26,20 +26,20 @@ sim p
             sv
             (PosVel lat' lon' alt' vel_x' vel_y' vel_z')
             (Burst mass' bal_cd' par_cd' packages_cd' launch_time' burst_vol' b_volume' b_press')
-            (Wind wind_x' wind_y'))
+            (Wind (WindX wind_x') (WindY wind_y')))
     pressureList
     gribLines
     tellPred
   | baseGuard p = do
     let pv = PosVel lat' lon' alt' vel_x' vel_y' vel_z'
         bv = Burst mass' bal_cd' par_cd' packages_cd' launch_time' burst_vol' b_volume' b_press'
-        w = Wind windX windY
+        w = Wind windX' windY'
     return (Simulation sv pv bv w)
   | otherwise = do
     let sv' = sv { _simulationTime = sv ^. simulationTime + sv ^. increment }
         pv = PosVel nlat nlon nAlt nvel_x nvel_y (pitch p vel_z' nvel_z)
         bv = Burst mass' bal_cd' par_cd' packages_cd' launch_time' burst_vol' (pitch p nVol b_volume') (pitch p pres b_press')
-        w = Wind windX windY
+        w = Wind windX' windY'
         s = Simulation sv' pv bv w
     when (tellPred simul) $
       tell (D.singleton s)
@@ -60,12 +60,12 @@ sim p
     -- Calculate drag force for winds
     f_drag_x =
       case p of
-        Ascent -> I.drag dens vel_x' windX bal_cd' nCAsph
-        Descent -> I.drag dens vel_x' windX packages_cd' 1
+        Ascent -> I.drag dens vel_x' (_windX windX') bal_cd' nCAsph
+        Descent -> I.drag dens vel_x' (_windX windX') packages_cd' 1
     f_drag_y =
       case p of
-        Ascent -> I.drag dens vel_y' windY bal_cd' nCAsph
-        Descent -> I.drag dens vel_y' windY packages_cd' 1
+        Ascent -> I.drag dens vel_y' (_windY windY') bal_cd' nCAsph
+        Descent -> I.drag dens vel_y' (_windY windY') packages_cd' 1
     -- Only used for descent
     f_drag_z = I.drag dens vel_z' 0 par_cd' 1
 
@@ -106,9 +106,9 @@ sim p
 
     filterPressure = I.roundToClosest pres pressureList
 
-    (windX, windY) =
+    (windX', windY') =
       fromMaybe
-      (wind_x', wind_y')
+      (WindX wind_x', WindY wind_y')
       (I.windFromLatLon
         (Latitude lat')
         (Longitude lon')

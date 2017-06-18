@@ -135,7 +135,7 @@ windFromLatLon
   -> Longitude
   -> Int
   -> HM.HashMap Key GribLine
-  -> Maybe (WindMs, WindMs)
+  -> Maybe (WindX, WindY)
 windFromLatLon lat lng filterPressure gribLines = do
   UGRDGribLine (UGRDLine u) <- filterKeyedGrib
                                lat
@@ -149,4 +149,5 @@ windFromLatLon lat lng filterPressure gribLines = do
                                filterPressure
                                VGRD
                                gribLines
-  return (WindMs (u ^. velocity), WindMs (u ^. velocity))
+  return (u ^. velocity . to WindMs . to WindX,
+          u ^. velocity . to WindMs . to WindY)
