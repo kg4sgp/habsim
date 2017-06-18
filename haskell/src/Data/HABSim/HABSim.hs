@@ -25,20 +25,44 @@ sim p
     simul@(Simulation
             sv
             (PosVel lat' lon' alt' vel_x' vel_y' vel_z')
-            (Burst mass' bal_cd' par_cd' packages_cd' launch_time' burst_vol' b_volume' b_press')
+            (Burst
+              mass'
+              bal_cd'
+              par_cd'
+              packages_cd'
+              launch_time'
+              burst_vol'
+              b_volume'
+              b_press')
             (Wind (WindX wind_x') (WindY wind_y')))
     pressureList
     gribLines
     tellPred
   | baseGuard p = do
     let pv = PosVel lat' lon' alt' vel_x' vel_y' vel_z'
-        bv = Burst mass' bal_cd' par_cd' packages_cd' launch_time' burst_vol' b_volume' b_press'
+        bv = Burst
+             mass'
+             bal_cd'
+             par_cd'
+             packages_cd'
+             launch_time'
+             burst_vol'
+             b_volume'
+             b_press'
         w = Wind windX' windY'
     return (Simulation sv pv bv w)
   | otherwise = do
     let sv' = sv { _simulationTime = sv ^. simulationTime + sv ^. increment }
         pv = PosVel nlat nlon nAlt nvel_x nvel_y (pitch p vel_z' nvel_z)
-        bv = Burst mass' bal_cd' par_cd' packages_cd' launch_time' burst_vol' (pitch p nVol b_volume') (pitch p pres b_press')
+        bv = Burst
+             mass'
+             bal_cd'
+             par_cd'
+             packages_cd'
+             launch_time'
+             burst_vol'
+             (pitch p nVol b_volume')
+             (pitch p pres b_press')
         w = Wind windX' windY'
         s = Simulation sv' pv bv w
     when (tellPred simul) $
@@ -89,7 +113,7 @@ sim p
     bearing = atan2 disp_y disp_x
     t_disp = (disp_x ** 2 + disp_y ** 2) ** (1 / 2)
     ang_dist = t_disp / I.er
-    
+
     latr = lat' * (pi / 180)
     lonr = lon' * (pi / 180)
     nlatr =
@@ -104,52 +128,43 @@ sim p
     (flat, flon, clat, clon) =
       I.latLonBox (Latitude lat') (Longitude lon') 0.25
 
-    (WindX (WindMs windX1), WindY (WindMs windY1)) = 
+    windCurrentDef lat lon =
       fromMaybe
       (WindX wind_x', WindY wind_y')
       (I.windFromLatLon
-        flat
-        flon
-        filterPressure
-        gribLines)  
-
-    (WindX (WindMs windX2), WindY (WindMs windY2)) = 
-      fromMaybe
-      (WindX wind_x', WindY wind_y')
-      (I.windFromLatLon
-        flat
-        clon
-        filterPressure
-        gribLines)  
-
-    (WindX (WindMs windX3), WindY (WindMs windY3)) = 
-      fromMaybe
-      (WindX wind_x', WindY wind_y')
-      (I.windFromLatLon
-        clat
-        flon
-        filterPressure
-        gribLines)  
-
-    (WindX (WindMs windX4), WindY (WindMs windY4)) = 
-      fromMaybe
-      (WindX wind_x', WindY wind_y')
-      (I.windFromLatLon
-        clat
-        clon
-        filterPressure
+        lat
+        lon
+        (I.roundToClosest pres pressureList)
         gribLines)
 
-    windIntpX = I.biLinIntp lat' lon' windX1 windX2 windX3 windX4 (flat ^. latitude) (clat ^. latitude) (flon ^. longitude) (clon ^. longitude)
-    windIntpY = I.biLinIntp lat' lon' windY1 windY2 windY3 windY4 (flat ^. latitude) (clat ^. latitude) (flon ^. longitude) (clon ^. longitude)
+    (WindX (WindMs windX1), WindY (WindMs windY1)) = windCurrentDef flat flon
+    (WindX (WindMs windX2), WindY (WindMs windY2)) = windCurrentDef flat clon
+    (WindX (WindMs windX3), WindY (WindMs windY3)) = windCurrentDef clat flon
+    (WindX (WindMs windX4), WindY (WindMs windY4)) = windCurrentDef clat clon
+    (windX', windY') = windCurrentDef (Latitude lat') (Longitude lon')
 
-    filterPressure = I.roundToClosest pres pressureList
+    windIntpX =
+      I.biLinIntp
+      lat'
+      lon'
+      windX1
+      windX2
+      windX3
+      windX4
+      (flat ^. latitude)
+      (clat ^. latitude)
+      (flon ^. longitude)
+      (clon ^. longitude)
 
-    (windX', windY') =
-      fromMaybe
-      (WindX wind_x', WindY wind_y')
-      (I.windFromLatLon
-        (Latitude lat')
-        (Longitude lon')
-        filterPressure
-        gribLines)  
+    windIntpY =
+      I.biLinIntp
+      lat'
+      lon'
+      windY1
+      windY2
+      windY3
+      windY4
+      (flat ^. latitude)
+      (clat ^. latitude)
+      (flon ^. longitude)
+      (clon ^. longitude)

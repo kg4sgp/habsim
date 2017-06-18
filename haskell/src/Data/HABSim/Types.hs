@@ -22,11 +22,14 @@ newtype Liter = Liter { _liter :: Double } deriving (DoubleGND)
 newtype WindMs = WindMs { _windMs :: Double } deriving (DoubleGND)
 newtype CoeffDrag = CoeffDrag { _coeffDrag :: Double } deriving (DoubleGND)
 newtype Velocity = Velocity { _velocity :: Double } deriving (DoubleGND)
-newtype CrossSecArea = CrossSecArea { _crossSecArea :: Double } deriving (DoubleGND)
+newtype CrossSecArea =
+  CrossSecArea { _crossSecArea :: Double } deriving (DoubleGND)
 newtype Force = Force { _force :: Double } deriving (DoubleGND)
-newtype Acceleration = Acceleration { _acceleration :: Double } deriving (DoubleGND)
+newtype Acceleration =
+  Acceleration { _acceleration :: Double } deriving (DoubleGND)
 newtype Mass = Mass { _mass :: Double } deriving (DoubleGND)
-newtype Displacement = Displacement { _displacement :: Double } deriving (DoubleGND)
+newtype Displacement =
+  Displacement { _displacement :: Double } deriving (DoubleGND)
 newtype WindX = WindX { _windX :: WindMs } deriving (DoubleGND)
 newtype WindY = WindY { _windY :: WindMs } deriving (DoubleGND)
 
