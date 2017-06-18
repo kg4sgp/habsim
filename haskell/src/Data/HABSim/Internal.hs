@@ -1,8 +1,11 @@
 module Data.HABSim.Internal where
 
 import Control.Lens
+import Data.HABSim.Grib2.CSVParse (filterKeyedGrib)
+import Data.HABSim.Grib2.CSVParse.Types hiding (Pressure)
 import Data.HABSim.Lens
 import Data.HABSim.Types
+import qualified Data.HashMap.Lazy as HM
 import qualified Data.Vector as V
 
 -- | Constants
@@ -126,3 +129,24 @@ latLonBox lat lon res = ((flat, flon), (flat, clon), (clat, flon), (clat, clon))
     flon = fromIntegral (floor (lon * Longitude mul) :: Integer) / (Longitude mul)
     clat = fromIntegral (ceiling (lat * Latitude mul) :: Integer) / (Latitude mul)
     clon = fromIntegral (ceiling (lon * Longitude mul) :: Integer) / (Longitude mul)
+
+windFromLatLon
+  :: Latitude
+  -> Longitude
+  -> Int
+  -> HM.HashMap Key GribLine
+  -> Maybe (WindMs, WindMs)
+windFromLatLon lat lng filterPressure gribLines = do
+  UGRDGribLine (UGRDLine u) <- filterKeyedGrib
+                               lat
+                               lng
+                               filterPressure
+                               UGRD
+                               gribLines
+  VGRDGribLine (VGRDLine v) <- filterKeyedGrib
+                               lat
+                               lng
+                               filterPressure
+                               VGRD
+                               gribLines
+  return (WindMs (u ^. velocity), WindMs (u ^. velocity))

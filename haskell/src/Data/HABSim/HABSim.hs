@@ -9,9 +9,9 @@ import qualified Data.DList as D
 import qualified Data.HABSim.Internal as I
 import Data.HABSim.Lens
 import Data.HABSim.Types
-import Data.HABSim.Grib2.CSVParse (filterKeyedGrib)
 import Data.HABSim.Grib2.CSVParse.Types
 import qualified Data.HashMap.Lazy as HM
+import Data.Maybe (fromMaybe)
 import qualified Data.Vector as V
 
 sim
@@ -101,13 +101,16 @@ sim p
     nlat = nlatr * (180 / pi)
     nlon = nlonr * (180 / pi)
 
+    ((la1, lo1), (la2, lo2), (la3, lo3), (la4, lo4)) =
+      I.latLonBox (Latitude lat') (Longitude lon') 0.25
+
     filterPressure = I.roundToClosest pres pressureList
+
     (windX, windY) =
-      let def = (wind_x', wind_y')
-      in case filterKeyedGrib (Latitude lat') (Longitude lon') filterPressure UGRD gribLines of
-           Just (UGRDGribLine (UGRDLine u)) ->
-             case filterKeyedGrib (Latitude lat') (Longitude lon') filterPressure VGRD gribLines of
-               Just (VGRDGribLine (VGRDLine v)) ->
-                 (WindMs (u ^. velocity), WindMs (u ^. velocity))
-               _ -> def
-           _ -> def
+      fromMaybe
+      (wind_x', wind_y')
+      (I.windFromLatLon
+        (Latitude lat')
+        (Longitude lon')
+        filterPressure
+        gribLines)
