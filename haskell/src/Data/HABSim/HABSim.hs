@@ -101,8 +101,47 @@ sim p
     nlat = nlatr * (180 / pi)
     nlon = nlonr * (180 / pi)
 
-    ((la1, lo1), (la2, lo2), (la3, lo3), (la4, lo4)) =
+    (flat, flon, clat, clon) =
       I.latLonBox (Latitude lat') (Longitude lon') 0.25
+
+    (WindX (WindMs windX1), WindY (WindMs windY1)) = 
+      fromMaybe
+      (WindX wind_x', WindY wind_y')
+      (I.windFromLatLon
+        flat
+        flon
+        filterPressure
+        gribLines)  
+
+    (WindX (WindMs windX2), WindY (WindMs windY2)) = 
+      fromMaybe
+      (WindX wind_x', WindY wind_y')
+      (I.windFromLatLon
+        flat
+        clon
+        filterPressure
+        gribLines)  
+
+    (WindX (WindMs windX3), WindY (WindMs windY3)) = 
+      fromMaybe
+      (WindX wind_x', WindY wind_y')
+      (I.windFromLatLon
+        clat
+        flon
+        filterPressure
+        gribLines)  
+
+    (WindX (WindMs windX4), WindY (WindMs windY4)) = 
+      fromMaybe
+      (WindX wind_x', WindY wind_y')
+      (I.windFromLatLon
+        clat
+        clon
+        filterPressure
+        gribLines)
+
+    windIntpX = I.biLinIntp lat' lon' windX1 windX2 windX3 windX4 (flat ^. latitude) (clat ^. latitude) (flon ^. longitude) (clon ^. longitude)
+    windIntpY = I.biLinIntp lat' lon' windY1 windY2 windY3 windY4 (flat ^. latitude) (clat ^. latitude) (flon ^. longitude) (clon ^. longitude)
 
     filterPressure = I.roundToClosest pres pressureList
 
@@ -113,4 +152,4 @@ sim p
         (Latitude lat')
         (Longitude lon')
         filterPressure
-        gribLines)
+        gribLines)  

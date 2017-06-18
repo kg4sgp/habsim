@@ -121,8 +121,8 @@ roundToClosest n xs =
 -- We need to take our longitude and latitude, multiply it by 1/resolution
 -- then take the floor and ceiling of both numbers and organize them as
 -- (f,f) (f,c) (c,f) (c,c) and report this back as the bounding box
-latLonBox :: Latitude -> Longitude -> Double -> ((Latitude, Longitude), (Latitude, Longitude), (Latitude, Longitude), (Latitude, Longitude))
-latLonBox lat lon res = ((flat, flon), (flat, clon), (clat, flon), (clat, clon))
+latLonBox :: Latitude -> Longitude -> Double -> (Latitude, Longitude, Latitude, Longitude)
+latLonBox lat lon res = (flat, flon, clat, clon)
   where
     mul = 1/res
     flat = fromIntegral (floor (lat * Latitude mul) :: Integer) / (Latitude mul)
