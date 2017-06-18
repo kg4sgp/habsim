@@ -126,8 +126,3 @@ latLonBox lat lon res = ((flat, flon), (flat, clon), (clat, flon), (clat, clon))
     flon = fromIntegral (floor (lon * Longitude mul) :: Integer) / (Longitude mul)
     clat = fromIntegral (ceiling (lat * Latitude mul) :: Integer) / (Latitude mul)
     clon = fromIntegral (ceiling (lon * Longitude mul) :: Integer) / (Longitude mul)
-
-
-
-
-
