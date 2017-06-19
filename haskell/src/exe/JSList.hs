@@ -24,7 +24,7 @@ main = do
   csv <- BL.readFile csvName
   let sv = SimulationTime 0.1 0.0
       pv = PosVel 41.1063 (-80.6477) (Altitude 300) 0.0 0.0 3.0
-      bv = Burst 2.0 0.47 1.0 0.5 0.0 540.0 (Liter 5.0) 120000.0
+      bv = Burst 2.0 0.47 1.0 0.5 0.0 2000.0 (Liter 5.0) 120000.0
       w = Wind 4.0 4.0
       s = Simulation sv pv bv w
       tellPred simul =
