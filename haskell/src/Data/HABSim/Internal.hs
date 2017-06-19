@@ -164,4 +164,4 @@ windFromLatLon lat lng filterPressure gribLines = do
                                VGRD
                                gribLines
   return (u ^. velocity . to WindMs . to WindX,
-          u ^. velocity . to WindMs . to WindY)
+          v ^. velocity . to WindMs . to WindY)
