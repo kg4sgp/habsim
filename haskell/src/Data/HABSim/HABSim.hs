@@ -84,12 +84,12 @@ sim p
     -- Calculate drag force for winds
     f_drag_x =
       case p of
-        Ascent -> I.drag dens vel_x' (_windX windX') bal_cd' nCAsph
-        Descent -> I.drag dens vel_x' (_windX windX') packages_cd' 1
+        Ascent -> I.drag dens vel_x' (windIntpX ^. windX) bal_cd' nCAsph
+        Descent -> I.drag dens vel_x' (windIntpX ^. windX) packages_cd' 1
     f_drag_y =
       case p of
-        Ascent -> I.drag dens vel_y' (_windY windY') bal_cd' nCAsph
-        Descent -> I.drag dens vel_y' (_windY windY') packages_cd' 1
+        Ascent -> I.drag dens vel_y' (windIntpY ^. windY) bal_cd' nCAsph
+        Descent -> I.drag dens vel_y' (windIntpY ^. windY) packages_cd' 1
     -- Only used for descent
     f_drag_z = I.drag dens vel_z' 0 par_cd' 1
 
@@ -144,27 +144,29 @@ sim p
     (windX', windY') = windCurrentDef (Latitude lat') (Longitude lon')
 
     windIntpX =
-      I.biLinIntp
-      lat'
-      lon'
-      windX1
-      windX2
-      windX3
-      windX4
-      (flat ^. latitude)
-      (clat ^. latitude)
-      (flon ^. longitude)
-      (clon ^. longitude)
+      WindX . WindMs $
+        I.biLinIntp
+        lat'
+        lon'
+        windX1
+        windX2
+        windX3
+        windX4
+        (flat ^. latitude)
+        (clat ^. latitude)
+        (flon ^. longitude)
+        (clon ^. longitude)
 
     windIntpY =
-      I.biLinIntp
-      lat'
-      lon'
-      windY1
-      windY2
-      windY3
-      windY4
-      (flat ^. latitude)
-      (clat ^. latitude)
-      (flon ^. longitude)
-      (clon ^. longitude)
+      WindY . WindMs $
+        I.biLinIntp
+        lat'
+        lon'
+        windY1
+        windY2
+        windY3
+        windY4
+        (flat ^. latitude)
+        (clat ^. latitude)
+        (flon ^. longitude)
+        (clon ^. longitude)
