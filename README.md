@@ -1,4 +1,6 @@
-<img src="etc/habsim.svg" alt="HABSim">
+<img
+  src="https://tmp.elrod.me/habsim.svg"
+  alt="HABSim">
 
 High Altitude Balloon Simulator
 
