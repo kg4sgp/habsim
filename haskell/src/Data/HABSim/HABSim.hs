@@ -9,9 +9,9 @@ import qualified Data.DList as D
 import qualified Data.HABSim.Internal as I
 import Data.HABSim.Lens
 import Data.HABSim.Types
-import Data.HABSim.Grib2.CSVParse (filterKeyedGrib)
 import Data.HABSim.Grib2.CSVParse.Types
 import qualified Data.HashMap.Lazy as HM
+import Data.Maybe (fromMaybe)
 import qualified Data.Vector as V
 
 sim
@@ -25,21 +25,45 @@ sim p
     simul@(Simulation
             sv
             (PosVel lat' lon' alt' vel_x' vel_y' vel_z')
-            (Burst mass' bal_cd' par_cd' packages_cd' launch_time' burst_vol' b_volume' b_press')
-            (Wind wind_x' wind_y'))
+            (Burst
+              mass'
+              bal_cd'
+              par_cd'
+              packages_cd'
+              launch_time'
+              burst_vol'
+              b_volume'
+              b_press')
+            (Wind (WindX wind_x') (WindY wind_y')))
     pressureList
     gribLines
     tellPred
   | baseGuard p = do
     let pv = PosVel lat' lon' alt' vel_x' vel_y' vel_z'
-        bv = Burst mass' bal_cd' par_cd' packages_cd' launch_time' burst_vol' b_volume' b_press'
-        w = Wind windX windY
+        bv = Burst
+             mass'
+             bal_cd'
+             par_cd'
+             packages_cd'
+             launch_time'
+             burst_vol'
+             b_volume'
+             b_press'
+        w = Wind windX' windY'
     return (Simulation sv pv bv w)
   | otherwise = do
     let sv' = sv { _simulationTime = sv ^. simulationTime + sv ^. increment }
         pv = PosVel nlat nlon nAlt nvel_x nvel_y (pitch p vel_z' nvel_z)
-        bv = Burst mass' bal_cd' par_cd' packages_cd' launch_time' burst_vol' (pitch p nVol b_volume') (pitch p pres b_press')
-        w = Wind windX windY
+        bv = Burst
+             mass'
+             bal_cd'
+             par_cd'
+             packages_cd'
+             launch_time'
+             burst_vol'
+             (pitch p nVol b_volume')
+             (pitch p pres b_press')
+        w = Wind windX' windY'
         s = Simulation sv' pv bv w
     when (tellPred simul) $
       tell (D.singleton s)
@@ -60,12 +84,12 @@ sim p
     -- Calculate drag force for winds
     f_drag_x =
       case p of
-        Ascent -> I.drag dens vel_x' windX bal_cd' nCAsph
-        Descent -> I.drag dens vel_x' windX packages_cd' 1
+        Ascent -> I.drag dens vel_x' (windIntpX ^. windX) bal_cd' nCAsph
+        Descent -> I.drag dens vel_x' (windIntpX ^. windX) packages_cd' 1
     f_drag_y =
       case p of
-        Ascent -> I.drag dens vel_y' windY bal_cd' nCAsph
-        Descent -> I.drag dens vel_y' windY packages_cd' 1
+        Ascent -> I.drag dens vel_y' (windIntpY ^. windY) bal_cd' nCAsph
+        Descent -> I.drag dens vel_y' (windIntpY ^. windY) packages_cd' 1
     -- Only used for descent
     f_drag_z = I.drag dens vel_z' 0 par_cd' 1
 
@@ -89,7 +113,7 @@ sim p
     bearing = atan2 disp_y disp_x
     t_disp = (disp_x ** 2 + disp_y ** 2) ** (1 / 2)
     ang_dist = t_disp / I.er
-    
+
     latr = lat' * (pi / 180)
     lonr = lon' * (pi / 180)
     nlatr =
@@ -101,13 +125,48 @@ sim p
     nlat = nlatr * (180 / pi)
     nlon = nlonr * (180 / pi)
 
-    filterPressure = I.roundToClosest pres pressureList
-    (windX, windY) =
-      let def = (wind_x', wind_y')
-      in case filterKeyedGrib (Latitude lat') (Longitude lon') filterPressure UGRD gribLines of
-           Just (UGRDGribLine (UGRDLine u)) ->
-             case filterKeyedGrib (Latitude lat') (Longitude lon') filterPressure VGRD gribLines of
-               Just (VGRDGribLine (VGRDLine v)) ->
-                 (WindMs (u ^. velocity), WindMs (u ^. velocity))
-               _ -> def
-           _ -> def
+    (flat, flon, clat, clon) =
+      I.latLonBox (Latitude lat') (Longitude lon') 0.25
+
+    windCurrentDef lat lon =
+      fromMaybe
+      (WindX wind_x', WindY wind_y')
+      (I.windFromLatLon
+        lat
+        lon
+        (I.roundToClosest pres pressureList)
+        gribLines)
+
+    (WindX (WindMs windX1), WindY (WindMs windY1)) = windCurrentDef flat flon
+    (WindX (WindMs windX2), WindY (WindMs windY2)) = windCurrentDef flat clon
+    (WindX (WindMs windX3), WindY (WindMs windY3)) = windCurrentDef clat flon
+    (WindX (WindMs windX4), WindY (WindMs windY4)) = windCurrentDef clat clon
+    (windX', windY') = windCurrentDef (Latitude lat') (Longitude lon')
+
+    windIntpX =
+      WindX . WindMs $
+        I.biLinIntp
+        lat'
+        lon'
+        windX1
+        windX2
+        windX3
+        windX4
+        (flat ^. latitude)
+        (clat ^. latitude)
+        (flon ^. longitude)
+        (clon ^. longitude)
+
+    windIntpY =
+      WindY . WindMs $
+        I.biLinIntp
+        lat'
+        lon'
+        windY1
+        windY2
+        windY3
+        windY4
+        (flat ^. latitude)
+        (clat ^. latitude)
+        (flon ^. longitude)
+        (clon ^. longitude)

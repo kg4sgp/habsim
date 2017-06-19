@@ -33,6 +33,8 @@ makeFieldsNoPrefix ''HT.SimulationTime
 makeFieldsNoPrefix ''HT.Velocity
 makeFieldsNoPrefix ''HT.Wind
 makeFieldsNoPrefix ''HT.WindMs
+makeFieldsNoPrefix ''HT.WindX
+makeFieldsNoPrefix ''HT.WindY
 
 -- Data.HABSim.Grib2.CSVParse.Types
 makeFieldsNoPrefix ''CT.GribTime
