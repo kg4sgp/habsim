@@ -1,4 +1,4 @@
-CFLAGS=-Wall -g -lm
+CFLAGS=-Wall -g -lm -pedantic -std=c99
 
 default: habsim
 
