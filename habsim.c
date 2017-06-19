@@ -157,6 +157,7 @@ int main(void)
   double b_velo = 0.0;
   double b_acel = 0.0;
   double b_volu = 0.0;
+  double b_volu_n = 0.0;
   double b_cross_area = 0.0;
   double b_pres = 0.0;
   double b_radius = 0.0;
@@ -164,6 +165,7 @@ int main(void)
   double f_lift = 0.0;
   double f_drag  = 0.0;
   double a_temp = 0.0;
+  double a_temp_n = 0.0;
   prdn prdn1;  
   /* time increment in seconds*/
   double t_inc = 0.01;
@@ -195,6 +197,7 @@ int main(void)
   f_lift = f_lift_kg * g;
   /* volume of sphere V = 4/3 * pi *r^3 */ 
   b_volu = (4.0/3.0) * M_PI * pow((b_diam/2), 3);
+  b_volu_n = b_volu;
   prdn1 = calc_pressure(b_alti);
   b_pres = prdn1.pr;
   a_temp = calc_temp(b_alti);
@@ -215,8 +218,11 @@ int main(void)
     /* calculate pressure at altitude */
     prdn prdn_new = calc_pressure(b_alti);
   
+    a_temp_n = calc_temp(b_alti);
+  
     /* calculate new voume of balloon */
-    b_volu = (b_pres*b_volu)/prdn_new.pr;
+    b_volu_n = (b_pres*b_volu_n)/prdn_new.pr;
+    b_volu = (b_pres*b_volu*a_temp_n)/(a_temp*prdn_new.pr);
     b_pres = prdn_new.pr;
     
     /* calculate radius from volume */
@@ -233,7 +239,7 @@ int main(void)
     
     /* calculate boyant force */
     f_boyant = boyancy(prdn_new.dn, h2_den, g, b_volu);
-    f_boyant_a = boyancy(prdn_new.dn, gas_dens(mm_h2, b_pres, adabatic_temp), g, b_volu);
+    f_boyant_a = boyancy(prdn_new.dn, gas_dens(mm_h2, b_pres, a_temp-10.0), g, b_volu);
     
     /* drag force - ascending balloon*/
     /* https://en.wikipedia.org/wiki/Drag_equation */
@@ -264,8 +270,9 @@ int main(void)
     print_count++;
     if (print_count == print_deci){
       //printf("%.1f, %f, %f, %f, %f, %f, %f\n", t, b_alti, b_pres, a_temp, h2_den, prdn_new.dn, f_boyant);
-      printf("%.1f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f\n", t, b_alti, b_velo, b_acel, b_pres, b_radius, f_net, f_boyant, b_disp_x, b_disp_y, b_velo_x, b_velo_y);
+      //printf("%.1f, %f, %f, %f, %f, %f, %f, %f,\n", t, b_alti, b_velo, b_acel, b_pres, b_radius, f_net, f_boyant);
       //printf("%.1f, %.2f %.3f, %.1f, %.1f, %.1f, %.1f\n", t, b_alti, b_velo, adabatic_temp, f_boyant, f_boyant_a, f_boyant - f_boyant_a);
+      printf("%.1f, %.2f %.3f, %.3f, %.3f, %.3f\n", t, b_alti, b_velo, b_volu, b_volu_n, b_volu - b_volu_n);
       print_count = 0;
     }
     
