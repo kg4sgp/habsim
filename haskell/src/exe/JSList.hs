@@ -34,7 +34,7 @@ main = do
                   1.0               -- Parachute Coefficent of Drag
                   0.5               -- Packages Coefficent of Drag
                   0.0               -- Launch Time (Not used currently)
-                  4000.0            -- Burst Volume (Liters)
+                  550.0            -- Burst Volume (Liters)
                   (Liter 5.0)       -- Balloon Volume initial (Liters)
                   101325.0          -- Balloon Pressure initial (Pascals)
       w = Wind 4.0 4.0

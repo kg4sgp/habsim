@@ -134,7 +134,7 @@ sim p
       (I.windFromLatLon
         lat
         lon
-        (I.roundToClosest pres pressureList)
+        (I.roundToClosest (pres/100) pressureList)
         gribLines)
 
     (WindX (WindMs windX1), WindY (WindMs windY1)) = windCurrentDef flat flon
