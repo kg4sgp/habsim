@@ -56,6 +56,7 @@ main = do
         (lastAscent ^. retW)
       (lastDescent, accDescent) =
         runWriter $ sim Descent ascentLastSim pressures gribLines tellPred
+  putStrLn $ "var burst_point = " ++ jsonLatLon lastAscent ++ ";"
   putStrLn "var flight_path = ["
   putStr . intercalate ",\n" . map jsonLatLon . D.toList $ accAscent
   putStrLn ","

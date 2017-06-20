@@ -20,8 +20,13 @@
       function initMap() {
         var map = new google.maps.Map(document.getElementById('map'), {
           zoom: 9,
-          center: {lat: 41.10, lng: -80.64},
+          center: burst_point,
           mapTypeId: 'terrain'
+        });
+
+        var burst_marker = new google.maps.Marker({
+          position: burst_point,
+          map: map
         });
 
         var flightPath = new google.maps.Polyline({
@@ -29,10 +34,9 @@
           geodesic: false,
           strokeColor: '#FF0000',
           strokeOpacity: 1.0,
-          strokeWeight: 2
+          strokeWeight: 2,
+          map: map
         });
-
-        flightPath.setMap(map);
       }
     </script>
     <script async defer
