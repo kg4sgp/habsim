@@ -32,6 +32,7 @@ module Data.HABSim.Grib2.CSVParse
 
 import qualified Data.ByteString.Lazy.Char8 as BL
 import Data.Csv
+import Data.Either (isRight)
 import Data.HABSim.Grib2.CSVParse.Types
 import Data.HABSim.Types (Latitude (..), Longitude (..))
 import qualified Data.HashMap.Lazy as HM
@@ -48,8 +49,9 @@ decodeKeyedGrib = decode NoHeader
 -- | Convert a 'V.Vector' of 'KeyedGribLine' into a 'HM.HashMap' keyed on the
 -- latitude longitude, pressure, and direction of the grib line.
 keyedGribToHM :: V.Vector KeyedGribLine -> HM.HashMap Key GribLine
-keyedGribToHM = V.foldr (\(KeyedGribLine (key, gline)) hm ->
+keyedGribToHM = V.foldr (\(KeyedGribLine (Right (key, gline))) hm ->
                             HM.insert key gline hm) HM.empty
+                . V.filter (isRight . _keyedLine)
 
 -- | Given any kind of 'GridLine' (usually either a 'UGRDGribLine' or a
 -- 'VGRDGribLine', but could also be an 'OtherGribLine'), pull the raw Grib line

@@ -96,7 +96,7 @@ type Pressure = Int
 type Key = (Longitude, Latitude, Pressure, Direction)
 
 newtype KeyedGribLine =
-  KeyedGribLine (Key, GribLine)
+  KeyedGribLine { _keyedLine :: Either String (Key, GribLine) }
   deriving (Eq, Show)
 
 instance FromRecord KeyedGribLine where
@@ -111,18 +111,18 @@ instance FromRecord KeyedGribLine where
         lat <- v .! 5
         vel <- v .! 6
         case press of
-          Nothing -> mzero
+          Nothing -> return $ KeyedGribLine (Left "Invalid pressure")
           Just press' ->
             let rawLine = RawGribLine refTime foreTime dir press' lon lat vel
                 key = (lon, lat, press', dir)
             in return $
                case dir of
                  UGRD ->
-                   KeyedGribLine (key, (UGRDGribLine (UGRDLine rawLine)))
+                   KeyedGribLine (Right (key, (UGRDGribLine (UGRDLine rawLine))))
                  VGRD ->
-                   KeyedGribLine (key, (VGRDGribLine (VGRDLine rawLine)))
+                   KeyedGribLine (Right (key, (VGRDGribLine (VGRDLine rawLine))))
                  Other _ ->
-                   KeyedGribLine (key, (OtherGribLine (OtherLine rawLine)))
+                   KeyedGribLine (Right (key, (OtherGribLine (OtherLine rawLine))))
     | otherwise = mzero
     where
       parsePressure s =
