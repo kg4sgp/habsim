@@ -22,8 +22,10 @@ import Data.Char (isDigit)
 import Data.Csv
 import Data.HABSim.Types (Longitude (..), Latitude (..))
 import Data.Hashable
+import Data.List (isSuffixOf)
 import Data.Time
 import qualified Data.Vector as V
+import Text.Read (readMaybe)
 
 -- | The wind direction
 --
@@ -104,19 +106,26 @@ instance FromRecord KeyedGribLine where
         refTime <- v .! 0
         foreTime <- v .! 1
         dir <- v .! 2
-        press <- mbToInt <$> v .! 3
+        press <- parsePressure <$> v .! 3
         lon <- v .! 4
         lat <- v .! 5
         vel <- v .! 6
-        let rawLine = RawGribLine refTime foreTime dir press lon lat vel
-            key = (lon, lat, press, dir)
-        return $ case dir of
-                   UGRD ->
-                     KeyedGribLine (key, (UGRDGribLine (UGRDLine rawLine)))
-                   VGRD ->
-                     KeyedGribLine (key, (VGRDGribLine (VGRDLine rawLine)))
-                   Other _ ->
-                     KeyedGribLine (key, (OtherGribLine (OtherLine rawLine)))
+        case press of
+          Nothing -> mzero
+          Just press' ->
+            let rawLine = RawGribLine refTime foreTime dir press' lon lat vel
+                key = (lon, lat, press', dir)
+            in return $
+               case dir of
+                 UGRD ->
+                   KeyedGribLine (key, (UGRDGribLine (UGRDLine rawLine)))
+                 VGRD ->
+                   KeyedGribLine (key, (VGRDGribLine (VGRDLine rawLine)))
+                 Other _ ->
+                   KeyedGribLine (key, (OtherGribLine (OtherLine rawLine)))
     | otherwise = mzero
     where
-      mbToInt s = read (takeWhile isDigit s)
+      parsePressure s =
+        if " mb" `isSuffixOf` s
+        then readMaybe (takeWhile isDigit s)
+        else Nothing
