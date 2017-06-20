@@ -38,7 +38,7 @@ import Data.HABSim.Types (Latitude (..), Longitude (..))
 import qualified Data.HashMap.Lazy as HM
 import qualified Data.Vector as V
 
-#if MIN_VERSION_base(4,6,0)
+#if defined(__GLASGOW_HASKELL__) && (__GLASGOW_HASKELL__ >= 780)
 import Data.Either (isRight)
 #else
 isRight :: Either a b -> Bool
