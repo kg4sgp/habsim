@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module : Data.HABSim.Grib2.CSVParse.Types
@@ -32,11 +33,18 @@ module Data.HABSim.Grib2.CSVParse
 
 import qualified Data.ByteString.Lazy.Char8 as BL
 import Data.Csv
-import Data.Either (isRight)
 import Data.HABSim.Grib2.CSVParse.Types
 import Data.HABSim.Types (Latitude (..), Longitude (..))
 import qualified Data.HashMap.Lazy as HM
 import qualified Data.Vector as V
+
+#if MIN_VERSION_base(4,6,0)
+import Data.Either (isRight)
+#else
+isRight :: Either a b -> Bool
+isRight (Right _) = True
+isRight _ = False
+#endif
 
 -- | A helper function that primarily exists just to help type inference.
 --
