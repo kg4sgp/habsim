@@ -23,8 +23,20 @@ main = do
   csvName <- fmap head getArgs
   csv <- BL.readFile csvName
   let sv = SimulationTime 0.1 0.0
-      pv = PosVel 41.1063 (-80.6477) (Altitude 300) 0.0 0.0 3.0
-      bv = Burst 2.0 0.47 1.0 0.5 0.0 2000.0 (Liter 5.0) 120000.0
+      pv = PosVel (40.3772)         -- lat (decimal degrees)
+                  (-83.0594)        -- lon (decimal degrees)
+                  (Altitude 300)    -- altitude (m)
+                  0.0               -- velocity x initial (m/s)
+                  0.0               -- velocity y initial (m/s)
+                  4.0               -- velocity z (ascent rate) (m/s)
+      bv = Burst  2.0               -- mass (kg)
+                  0.47              -- Balloon Coefficent of Drag
+                  1.0               -- Parachute Coefficent of Drag
+                  0.5               -- Packages Coefficent of Drag
+                  0.0               -- Launch Time (Not used currently)
+                  4000.0            -- Burst Volume (Liters)
+                  (Liter 5.0)       -- Balloon Volume initial (Liters)
+                  101325.0          -- Balloon Pressure initial (Pascals)
       w = Wind 4.0 4.0
       s = Simulation sv pv bv w
       tellPred simul =

@@ -110,7 +110,7 @@ sim p
 
     -- Calculate change in corrdinates
     -- Because of the relatively small changes, we assume a spherical earth
-    bearing = atan2 disp_y disp_x
+    bearing = atan2 disp_x disp_y
     t_disp = (disp_x ** 2 + disp_y ** 2) ** (1 / 2)
     ang_dist = t_disp / I.er
 
