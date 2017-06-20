@@ -8,6 +8,7 @@ import Data.HABSim.HABSim
 import Data.HABSim.Grib2.CSVParse
 import Data.HABSim.Lens
 import Data.HABSim.VectorUtilities
+import Data.List (intercalate)
 import qualified Data.HashMap.Lazy as HM
 import Data.Time
 import qualified Data.Vector as V
@@ -19,13 +20,26 @@ prettySV startTime (SimulationTime _ t) =
 
 pretty :: UTCTime -> Simulation -> String
 pretty startTime (Simulation sv pv b w) =
-  unlines $ [ prettySV startTime sv
-            , show sv
-            , show pv
-            , show b
-            , show w
-            , "==============="
-            ]
+  intercalate "," $ [ prettySV startTime sv
+                    , sv ^. increment . to show
+                    , sv ^. simulationTime . to show
+                    , pv ^. lat . to show . to (take 10)
+                    , pv ^. lon . to show . to (take 10)
+                    , pv ^. alt . altitude . to show . to (take 10)
+                    , pv ^. vel_x . velocity . to show . to (take 10)
+                    , pv ^. vel_y . velocity . to show . to (take 10)
+                    , pv ^. vel_z . velocity . to show . to (take 10)
+                    , b ^. mass . mass .to show . to (take 10)
+                    , b ^. bal_cd . coeffDrag . to show . to (take 10)
+                    , b ^. par_cd . coeffDrag . to show . to (take 10)
+                    , b ^. packages_cd . coeffDrag . to show . to (take 10)
+                    , b ^. launch_time . to show . to (take 10)
+                    , b ^. burst_vol . liter . to show . to (take 10)
+                    , b ^. b_vol . liter . to show . to (take 10)
+                    , b ^. b_pres . pressure . to show . to (take 10)
+                    , w ^. velo_x . windX . windMs . to show . to (take 10)
+                    , w ^. velo_y . windY . windMs . to show . to (take 10)
+                    ]
 
 main :: IO ()
 main = do
