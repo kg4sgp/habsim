@@ -6,7 +6,7 @@
 # choose 00, 06, 12, 18
 ysim=2017
 msim=06
-dsim=18
+dsim=21
 simtime=00
 
 #### Balloon Prediction time ###

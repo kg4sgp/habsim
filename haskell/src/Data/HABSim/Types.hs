@@ -59,6 +59,7 @@ data AltitudeRegionValues =
                        , _lb  :: !Double
                        , _pb  :: !Double
                        , _rho :: !Double
+                       , _tmp :: !Double
                        } deriving (Eq, Ord, Show)
 
 data SimulationTime =

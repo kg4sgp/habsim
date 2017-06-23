@@ -84,21 +84,21 @@ biLinIntp x y q11 q12 q21 q22 x1 x2 y1 y2 = p
 
 altToValues :: Altitude -> AltitudeRegionValues
 altToValues (Altitude alt)
-  --                                    alt    Temp   Lapse Rt  Pres    Density
+  --                                    alt    Temp   Lapse Rt  Pres    Density     Temperature
   | alt <= (-500) = error "Altitude out of range, too low (<500m)"
-  | alt <  11000  = AltitudeRegionValues 0     288.15 (-0.0065) 101325  1.225
-  | alt <= 20000  = AltitudeRegionValues 11000 216.65 0         22632.1 0.36391
-  | alt <= 32000  = AltitudeRegionValues 20000 216.65 0.001     5474.89 0.08803
-  | alt <= 47000  = AltitudeRegionValues 32000 228.65 0.0028    868.02  0.01322
-  | alt <= 51000  = AltitudeRegionValues 47000 270.65 0         110.91  0.00143
-  | alt <= 71000  = AltitudeRegionValues 51000 270.65 (-0.0028) 66.94   0.00086
-  | alt <= 86000  = AltitudeRegionValues 71000 214.65 0.002     3.96    0.000064
+  | alt <  11000  = AltitudeRegionValues 0     288.15 (-0.0065) 101325  1.225       (288.15 - (6.5 * (alt / 1000)))
+  | alt <= 20000  = AltitudeRegionValues 11000 216.65 0         22632.1 0.36391     216.65
+  | alt <= 32000  = AltitudeRegionValues 20000 216.65 0.001     5474.89 0.08803     (196.65 + (alt /1000))
+  | alt <= 47000  = AltitudeRegionValues 32000 228.65 0.0028    868.02  0.01322     (228.65 + 2.8 * ((alt/1000) - 32.0))
+  | alt <= 51000  = AltitudeRegionValues 47000 270.65 0         110.91  0.00143     270.65
+  | alt <= 71000  = AltitudeRegionValues 51000 270.65 (-0.0028) 66.94   0.00086     (270.65 - 2.8 * ((alt/1000) - 51.0))
+  | alt <= 86000  = AltitudeRegionValues 71000 214.65 0.002     3.96    0.000064    (214.65 - 2.0 * ((alt/1000) - 71.0))
   | otherwise     = error "Altitude out of range, too high (>86km)"
 
 altToPressure :: Altitude -> PressureDensity
 altToPressure a@(Altitude alt) =
   let acc = g ^. acceleration
-      (AltitudeRegionValues hb' tb' lb' pb' rho') = altToValues a
+      (AltitudeRegionValues hb' tb' lb' pb' rho' tmp') = altToValues a
       pr = if lb' == 0
            then pb' * exp (((-acc) * m * (alt - hb')) / (r * tb'))
            else
