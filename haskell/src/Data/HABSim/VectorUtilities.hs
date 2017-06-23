@@ -1,4 +1,4 @@
-module Utility where
+module Data.HABSim.VectorUtilities where
 
 import qualified Data.Set as S
 import qualified Data.Vector as V

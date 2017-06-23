@@ -7,11 +7,11 @@ import qualified Data.DList as D
 import Data.HABSim.HABSim
 import Data.HABSim.Grib2.CSVParse
 import Data.HABSim.Lens
+import Data.HABSim.VectorUtilities
 import qualified Data.HashMap.Lazy as HM
 import Data.List (intercalate)
 import qualified Data.Vector as V
 import System.Environment
-import Utility
 
 -- {lat: -18.142, lng: 178.431}
 jsonLatLon :: Simulation -> String

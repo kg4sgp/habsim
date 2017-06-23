@@ -1,7 +1,7 @@
 name:                habsim
 version:             0.1.0.0
 synopsis:            High Altitude Balloon flight path simulator
--- description:         
+-- description:
 homepage:            https://github.com/kg4sgp/habsim
 license:             BSD3
 license-file:        LICENSE
@@ -20,6 +20,7 @@ library
                      , Data.HABSim.Internal
                      , Data.HABSim.Lens
                      , Data.HABSim.Types
+                     , Data.HABSim.VectorUtilities
   other-extensions:    CPP, GeneralizedNewtypeDeriving, ViewPatterns
   build-depends:       base >= 4 && < 5
                      , bytestring >= 0.9 && < 1
