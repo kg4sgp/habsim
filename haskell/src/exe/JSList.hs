@@ -34,9 +34,11 @@ main = do
                   1.0               -- Parachute Coefficent of Drag
                   0.5               -- Packages Coefficent of Drag
                   0.0               -- Launch Time (Not used currently)
-                  550.0            -- Burst Volume (Liters)
+                  550.0             -- Burst Volume (Liters)
                   (Liter 5.0)       -- Balloon Volume initial (Liters)
                   101325.0          -- Balloon Pressure initial (Pascals)
+                  2.01588E-3        -- Lifting gas molar mass (hydrogen)
+                  288.15            -- Lifting gas temperature
       w = Wind 4.0 4.0
       s = Simulation sv pv bv w
       tellPred simul =

@@ -35,6 +35,7 @@ makeFieldsNoPrefix ''HT.Wind
 makeFieldsNoPrefix ''HT.WindMs
 makeFieldsNoPrefix ''HT.WindX
 makeFieldsNoPrefix ''HT.WindY
+makeFieldsNoPrefix ''HT.Temp
 
 -- Data.HABSim.Grib2.CSVParse.Types
 makeFieldsNoPrefix ''CT.GribTime

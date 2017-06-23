@@ -32,6 +32,7 @@ newtype Displacement =
   Displacement { _displacement :: Double } deriving (DoubleGND)
 newtype WindX = WindX { _windX :: WindMs } deriving (DoubleGND)
 newtype WindY = WindY { _windY :: WindMs } deriving (DoubleGND)
+newtype Temp = Temp { _temp :: Double } deriving (DoubleGND)
 
 -- Useful aliases
 type Volume = Liter
@@ -51,6 +52,7 @@ data AzElCord =
 data PressureDensity =
   PressureDensity { _pressureDensityPressure :: Pressure
                   , _pressureDensityDensity :: Density
+                  , _pressureDensityTemp    :: Temp
                   } deriving (Eq, Ord, Show)
 
 data AltitudeRegionValues =
@@ -85,6 +87,8 @@ data Burst =
         , _burstBurst_vol     :: Volume
         , _burstB_vol         :: Volume
         , _burstB_pres        :: Pressure
+        , _burstMolMass       :: !Double
+        , _burstTemp          :: !Double
         } deriving (Eq, Ord, Show)
 
 data Wind =
