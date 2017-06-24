@@ -19,8 +19,8 @@ g   = 9.80665
 
 -- | Calculate new volume given an initial pressure and volume, and a new
 -- pressure
-newVolume :: Pressure -> Volume -> Pressure -> Volume
-newVolume (Pressure p1) (Liter v) (Pressure p2) = Liter $ (p1 * v) / p2
+newVolume :: Pressure -> Double -> Volume -> Pressure -> Double -> Volume
+newVolume (Pressure p1) t1 (Liter v) (Pressure p2) t2 = Liter $ (p1 * v * t2) / (p2 * t1)
 {-# INLINE newVolume #-}
 
 -- | Calculate sphereical radius from volume
@@ -34,14 +34,15 @@ cAreaSp r = CrossSecArea $ pi * (r ** 2)
 {-# INLINE cAreaSp #-}
 
 -- Calculate gas density given molar mass, temp and pressure.
-gas_dens :: Double -> Double -> Double -> Double
-gas_dens mm p t = (mm*p)/(r*t)
+gas_dens :: Mass -> Pressure -> Temp -> Density
+gas_dens (Mass mm) (Pressure p) (Temp t) = Density $ (mm*p)/(r*t)
 {-# INLINE gas_dens #-}
 
 -- | Calculate boyancy.
-boyancy :: Double -> Double -> Double -> Double
-boyancy p_air p_gas v = (p_air-p_gas)*(g ^. acceleration)*v
-{-# INLINE boyancy #-}
+buoyancy :: Density -> Density -> Volume -> Force
+buoyancy (Density p_air) (Density p_gas) (Liter v) =
+  Force $ (p_air-p_gas)*(g ^. acceleration)*v
+{-# INLINE buoyancy #-}
 
 -- Calculate drag.
 drag :: Density -> Velocity -> WindMs -> CoeffDrag -> CrossSecArea -> Force
@@ -108,7 +109,7 @@ altToPressure a@(Altitude alt) =
            else
              rho' *
              ((tb' / (tb' + lb' * (alt - hb')))**(1 + ((acc * m) / (r * lb'))))
-  in PressureDensity (Pressure pr) (Density dn)
+  in PressureDensity (Pressure pr) (Density dn) (Temp tmp')
 
 -- | Given some number-like thing and a 'V.Vector' of other number-like things,
 -- round the number-like thing to the closest thing in the 'V.Vector'.

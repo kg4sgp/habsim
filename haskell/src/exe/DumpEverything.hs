@@ -60,6 +60,8 @@ main = do
                   550.0             -- Burst Volume (Liters)
                   (Liter 5.0)       -- Balloon Volume initial (Liters)
                   101325.0          -- Balloon Pressure initial (Pascals)
+                  2.01588E-3        -- Lifting gas molar mass (hydrogen)
+                  288.15            -- Lifting gas temperature
       w = Wind 4.0 4.0
       s = Simulation sv pv bv w
       startTime = UTCTime (fromGregorian 2017 05 28) 43200

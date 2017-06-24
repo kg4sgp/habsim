@@ -33,7 +33,9 @@ sim p
               launch_time'
               burst_vol'
               b_volume'
-              b_press')
+              b_press'
+              b_gmm'
+              b_temp')
             (Wind (WindX wind_x') (WindY wind_y')))
     pressureList
     gribLines
@@ -49,6 +51,8 @@ sim p
              burst_vol'
              b_volume'
              b_press'
+             b_gmm'
+             b_temp'
         w = Wind windX' windY'
     return (Simulation sv pv bv w)
   | otherwise = do
@@ -63,6 +67,8 @@ sim p
              burst_vol'
              (pitch p nVol b_volume')
              (pitch p pres b_press')
+             b_gmm'
+             (pitch p (_temp temp) b_temp')
         w = Wind windX' windY'
         s = Simulation sv' pv bv w
     when (tellPred simul) $
@@ -74,12 +80,17 @@ sim p
     baseGuard Descent = alt' < 0
 
     -- Getting pressure and density at current altitude
-    PressureDensity pres dens = I.altToPressure alt'
+    PressureDensity pres dens temp = I.altToPressure alt'
 
     -- Calculating volume, radius, and crossectional area
-    nVol = I.newVolume b_press' b_volume' pres
+    nVol = I.newVolume b_press' b_temp' b_volume' pres (_temp temp)
     Meter nbRad = I.spRadFromVol nVol
     nCAsph  = I.cAreaSp nbRad
+
+    gdens = I.gas_dens (Mass b_gmm') pres temp
+
+    -- Calculating buoyant force
+    f_buoy = I.buoyancy dens gdens nVol
 
     -- Calculate drag force for winds
     f_drag_x =
@@ -90,11 +101,15 @@ sim p
       case p of
         Ascent -> I.drag dens vel_y' (windIntpY ^. windY) bal_cd' nCAsph
         Descent -> I.drag dens vel_y' (windIntpY ^. windY) packages_cd' 1
-    -- Only used for descent
-    f_drag_z = I.drag dens vel_z' 0 par_cd' 1
-
+    f_drag_z = 
+      case p of
+        Ascent -> I.drag dens vel_z' 0 bal_cd' nCAsph
+        Descent -> I.drag dens vel_z' 0 par_cd' 1
     -- Net forces in z
-    f_net_z = f_drag_z - (I.force mass' I.g)
+    f_net_z =
+      case p of
+        Ascent -> f_buoy - (f_drag_z + (I.force mass' I.g))
+        Descent -> f_drag_z - (I.force mass' I.g)
 
 
     -- Calculate Kenimatics
@@ -106,7 +121,7 @@ sim p
     nvel_z = I.velo vel_z' accel_z sv
     Altitude disp_x = I.displacement (Altitude 0.0) nvel_x accel_x sv
     Altitude disp_y = I.displacement (Altitude 0.0) nvel_y accel_y sv
-    nAlt = I.displacement alt' vel_z' 0.0 sv
+    nAlt = I.displacement alt' vel_z' accel_z sv
 
     -- Calculate change in corrdinates
     -- Because of the relatively small changes, we assume a spherical earth
