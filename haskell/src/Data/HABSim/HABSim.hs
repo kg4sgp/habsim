@@ -57,7 +57,7 @@ sim p
     return (Simulation sv pv bv w)
   | otherwise = do
     let sv' = sv { _simulationTime = sv ^. simulationTime + sv ^. increment }
-        pv = PosVel nlat nlon nAlt nvel_x nvel_y (pitch p vel_z' nvel_z)
+        pv = PosVel nlat nlon nAlt nvel_x nvel_y nvel_z
         bv = Burst
              mass'
              bal_cd'
@@ -121,7 +121,7 @@ sim p
     nvel_z = I.velo vel_z' accel_z sv
     Altitude disp_x = I.displacement (Altitude 0.0) nvel_x accel_x sv
     Altitude disp_y = I.displacement (Altitude 0.0) nvel_y accel_y sv
-    nAlt = I.displacement alt' vel_z' accel_z sv
+    nAlt = I.displacement alt' nvel_z  accel_z sv
 
     -- Calculate change in corrdinates
     -- Because of the relatively small changes, we assume a spherical earth
