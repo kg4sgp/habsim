@@ -17,19 +17,17 @@ to make flight predictions.
 
 * ISA Atmospheric Model - Used to determine pressure, density and temperature
   of the atmosphere.
-* Constant ascent rate - for simplicity currently. Calculated ascent rate soon.
+* Variable ascent rate - Ascent rate calculated from buoyancy and drag.
 * Calculated lateral velocity - Lateral velocity from drag on balloon due to
   wind.
-* Calculated descent velocity - calculates drag from parachute (given a
+* Calculated descent velocity - Calculates drag from parachute (given a
   coefficient of drag).
-* Calculated burst altitude - given burst volume and initial fill volume.
+* Calculated burst altitude - Given burst volume and initial fill volume.
 * Interpolated wind - bilinear interpolation of wind between lat/lon gird
   points.
 
 ## Planned (roughly in order of importance):
 
-* Calculated ascent rate - use combined gas law. (ascent rate model
-  improvement)
 * Balloon Thermodynamics - energy input into balloon system.  (ascent rate
   model improvement)
 
