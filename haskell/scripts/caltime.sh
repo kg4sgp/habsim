@@ -1,12 +1,18 @@
 #!/usr/bin/env bash
 
 # This calculates which GFS GRIB future file to download for a launch
+# Call this with
+# ./caltime YYYY MM DD HH Lat Lon +-deg
+
+lat="$5"
+lon="$6"
+degpm="$7"
 
 # Launch Time
-lyear=2017      # Launch Year
-lmth=06         # Launch Month
-lday=22         # Launch Day
-lhr=07          # Launch Hour
+lyear="$1"      # Launch Year
+lmth="$2"         # Launch Month
+lday="$3"         # Launch Day
+lhr="$4"          # Launch Hour
 lepoch=$(date -u --date="$lyear$lmth$lday $lhr" +%s)
 
 #Current Time
@@ -40,11 +46,13 @@ fi
 
 # Calculate difference from sim to launch in hours
 sepoch=$(date -u --date="$syear$smth$sday $shr" +%s)
-dsepoch=$((lepoch-sepoch))
+dsepoch=$((sepoch-lepoch))
+echo "dsepoch $dsepoch"
 dshrs=$(echo "$dsepoch/60/60" | bc)
 
 if [ $dshrs -gt 168 ]; then
   echo "Please choose a launch time less than a week away"
+  exit
 fi
 
 echo "Last sim was on $syear $smth $sday at $shr UTC" 
@@ -54,5 +62,5 @@ flout=$(printf "%03d" $dshrs)
 echo "File to download is f$flout"
 echo " "
 
-
-
+echo "Calling download script..."
+sh ./dlgrib.sh $lat $lon $degpm $lyear $lmth $lday $lhr $flout 

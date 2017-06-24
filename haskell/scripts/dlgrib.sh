@@ -1,27 +1,32 @@
 #!/usr/bin/env bash
 
 # This is to help download and prepare a grib file for simulation
+# Calls this script with
+# ./dlgrib Lat Lon +-deg YYYY MM DD HH FF
 
 #### Time of Sim ####
 # choose 00, 06, 12, 18
-ysim=2017
-msim=06
-dsim=21
-simtime=00
+ysim="$4"
+msim="$5"
+dsim="$6"
+simtime="$7"
 
 #### Balloon Prediction time ###
 # ahead of sim time in hours, 3 digitis
 # if 0-120 increments of 1
 # if 120-240 increments of 3
 # if 240-384 increments of 12
-predictime=001
+predictime="$8"
 
 #### Location ####
-# The data we are gettin is in precision of 0.25 best to stick with those
-t_lat=46
-b_lat=36
-l_lon=-86
-r_lon=-76
+# The data we are getting is in precision of 0.25 best to stick with those
+lat="$1"
+lon="$2"
+area="$3"
+t_lat=$(($lat + $area))
+b_lat=$(($lat - $area))
+l_lon=$(($lon - $area))
+r_lon=$(($lon + $area))
 
 # download directory
 dldir=~/Downloads/gfs-grib
@@ -56,6 +61,11 @@ wgrib2 $dldir/raw/$ysim$msim$dsim$simtime-f${predictime}.gfs -csv $dldir/csv/$ys
 echo " "
 echo "In the habsim/haskell directory build and then run:"
 echo "./html/generate.sh ${dldir}/csv/$ysim$msim$dsim$simtime-f${predictime}.csv"
+
+echo " "
+echo "Running simulation..."
+sh ../html/generate.sh ${dldir}/csv/$ysim$msim$dsim$simtime-f${predictime}.csv
+
  
 echo " "
 echo "Done!"
