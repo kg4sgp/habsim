@@ -14,6 +14,8 @@ import qualified Data.HashMap.Lazy as HM
 import Data.Maybe (fromMaybe)
 import qualified Data.Vector as V
 
+import Debug.Trace
+
 sim
   :: Pitch
   -> Simulation
@@ -108,7 +110,7 @@ sim p
     -- Net forces in z
     f_net_z =
       case p of
-        Ascent -> f_buoy - (f_drag_z + (I.force mass' I.g))
+        Ascent -> f_buoy - ((-1 * f_drag_z) + (I.force mass' I.g))
         Descent -> f_drag_z - (I.force mass' I.g)
 
 
@@ -121,7 +123,7 @@ sim p
     nvel_z = I.velo vel_z' accel_z sv
     Altitude disp_x = I.displacement (Altitude 0.0) nvel_x accel_x sv
     Altitude disp_y = I.displacement (Altitude 0.0) nvel_y accel_y sv
-    nAlt = I.displacement alt' nvel_z  accel_z sv
+    nAlt = I.displacement alt' nvel_z accel_z sv
 
     -- Calculate change in corrdinates
     -- Because of the relatively small changes, we assume a spherical earth
