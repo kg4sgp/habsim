@@ -1,12 +1,15 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE DeriveGeneric #-}
 module Data.HABSim.Types where
 
 import Data.Csv (FromField)
 import Data.Hashable (Hashable)
+import Data.Serialize
+import GHC.Generics
 
-#define DoubleGND Enum, Eq, Floating, Fractional, FromField, Hashable, Num, \
-  Ord, Read, Real, RealFloat, RealFrac, Show
+#define DoubleGND Enum, Eq, Floating, Fractional, FromField, Generic, \
+  Hashable, Num, Ord, Read, Real, RealFloat, RealFrac, Serialize, Show
 
 -- I'd like to see us get rid of these and maybe use something like the
 -- @dimensional@ package instead. We can still wrap them in newtypes, but we'll
@@ -67,7 +70,9 @@ data AltitudeRegionValues =
 data SimulationTime =
   SimulationTime { _increment :: !Double
                  , _simulationTime :: !Double
-                 } deriving (Eq, Ord, Show)
+                 } deriving (Eq, Generic, Ord, Show)
+
+instance Serialize SimulationTime
 
 data PosVel =
   PosVel {  _posVelLat       :: !Double
@@ -76,7 +81,9 @@ data PosVel =
           , _posVelVel_x     :: Velocity
           , _posVelVel_y     :: Velocity
           , _posVelVel_z     :: Velocity
-          } deriving (Eq, Ord, Show)
+          } deriving (Eq, Generic, Ord, Show)
+
+instance Serialize PosVel
 
 data Burst =
   Burst { _burstMass          :: Mass
@@ -89,19 +96,25 @@ data Burst =
         , _burstB_pres        :: Pressure
         , _burstMolMass       :: !Double
         , _burstTemp          :: !Double
-        } deriving (Eq, Ord, Show)
+        } deriving (Eq, Generic, Ord, Show)
+
+instance Serialize Burst
 
 data Wind =
   Wind { _velo_x         :: WindX
        , _velo_y         :: WindY
-       } deriving (Eq, Ord, Show)
+       } deriving (Eq, Generic, Ord, Show)
+
+instance Serialize Wind
 
 data Simulation =
   Simulation { _retSV :: SimulationTime
              , _retPV :: PosVel
              , _retBV :: Burst
              , _retW  :: Wind
-             } deriving (Eq, Ord, Show)
+             } deriving (Eq, Generic, Ord, Show)
+
+instance Serialize Simulation
 
 data Pitch = Ascent | Descent deriving (Eq, Show)
 
